@@ -1,0 +1,28 @@
+# 패키지 파일 목록
+
+- `00_common_context.md`
+- `00_pilot_definition_of_done.md`
+- `README.md`
+- `examples/customer_search_to_detail.scenario.yaml`
+- `index.md`
+- `phase_00_foundation.md`
+- `phase_01_repository_connection.md`
+- `phase_02_frontend_analysis.md`
+- `phase_03_backend_analysis.md`
+- `phase_04_api_mapping.md`
+- `phase_05_interaction_graph.md`
+- `phase_06_scenario_dsl.md`
+- `phase_07_component_contract.md`
+- `phase_08_input_recommendation.md`
+- `phase_09_browser_execution.md`
+- `phase_10_backend_trace.md`
+- `phase_11_binding_validation.md`
+- `phase_12_evidence_collection.md`
+- `phase_13_interactive_test.md`
+- `phase_14_batch_test.md`
+- `phase_15_hitl.md`
+- `phase_99_integrated_pilot_validation.md`
+- `schemas/evidence_manifest.schema.json`
+- `schemas/interaction_graph.schema.json`
+- `schemas/scenario_dsl.schema.json`
+- `templates/phase_completion_report.md`

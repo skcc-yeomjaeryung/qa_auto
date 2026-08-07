@@ -1,0 +1,167 @@
+# Phase 12 — 로그·Screenshot·Trace 기반 Evidence Package 생성
+
+## 이 프롬프트의 역할
+
+당신은 대형 SI 프로젝트용 AI Code-to-E2E 관통 테스트 플랫폼의 수석 개발자다.  
+프로젝트 루트에서 먼저 다음 문서를 읽고 현재 코드 상태를 점검하라.
+
+- `AGENTS.md`
+- `README.md`
+- `index.md`
+- `00_common_context.md`
+- `00_pilot_definition_of_done.md`
+- 관련 JSON Schema와 이전 Phase 완료 보고서
+
+계획 문서만 작성하지 말고, **실제 구현·테스트·문서화·완료 보고까지 한 번의 작업으로 수행**하라.  
+모호한 부분은 기존 코드와 공통 문서를 근거로 합리적인 기본값을 채택하고, 구현을 중단하는 질문으로 돌리지 말라.
+
+## Phase 목표
+
+
+각 테스트 Run의 소스 Commit, Scenario, Input, Network, Backend Log, Binding Assertion, Screenshot, DOM snapshot(agent-browser)을 재현 가능한 증적 패키지로 생성한다.
+
+
+## 선행조건
+
+
+- Phase 09~11 완료
+- Evidence storage adapter 사용 가능
+
+
+## 구현 범위
+
+
+- Evidence Manifest
+- Screenshot policy (입력 직후 + 결과 화면 최소 2장)
+- DOM snapshot artifact (agent-browser)
+- network artifact (HAR/request log)
+- backend log
+- assertion
+- hash/integrity
+- retention
+- viewer/download
+
+
+## 상세 구현 요구사항
+
+
+1. Run마다 독립 디렉터리 또는 Object prefix를 사용한다.
+2. 최소 산출물:
+   - `scenario.yaml/json`
+   - `scenario-version.json`
+   - `commit-refs.json`
+   - `input-profile.json`
+   - `input.json`
+   - `request.json`
+   - `response.json`
+   - `backend-events.jsonl`
+   - `assertions.json`
+   - `screenshots/01-source.png`
+   - `screenshots/02-input-completed.png`
+   - `screenshots/03-destination.png`
+   - `snapshots/01-source.json` (또는 동등 DOM snapshot)
+   - `snapshots/02-input-completed.json`
+   - `snapshots/03-destination.json`
+   - `network/` (sanitized requests 또는 HAR)
+   - `manifest.json`
+3. Network HAR는 선택적이며 민감정보 제거 후 저장한다.
+4. Screenshot은 마스킹 영역을 적용한다.
+5. 각 파일에 SHA-256, size, mime, createdAt을 기록한다.
+6. Manifest는 `schemas/evidence_manifest.schema.json`을 따른다.
+7. 자동 실패여도 가능한 증적을 부분 수집한다.
+8. Evidence 상태:
+   - complete
+   - partial
+   - corrupted
+9. 저장 실패가 테스트 결과를 덮어쓰지 않도록 별도 상태를 둔다.
+10. Retention과 삭제 정책을 설정으로 제공한다.
+11. 사용자 다운로드는 ZIP으로 생성하고 권한 검사를 적용한다.
+12. Evidence Viewer는 파일 원문보다 요약과 연결관계를 먼저 보여준다.
+
+
+## API·계약·데이터
+
+
+필수 API:
+- `GET /api/runs/{id}/evidence`
+- `POST /api/runs/{id}/evidence/finalize`
+- `GET /api/evidence/{id}/manifest`
+- `GET /api/evidence/{id}/download`
+- `GET /api/evidence/{id}/artifacts/{artifactId}`
+
+
+## UI 요구사항
+
+
+Evidence Viewer:
+
+- 실행 요약
+- A 입력 Screenshot
+- Request/Response
+- Backend Timeline
+- B Screenshot
+- Assertion 표
+- Trace 다운로드/열기 안내
+- Manifest 무결성
+- 마스킹 상태
+
+
+## 필수 테스트
+
+
+- complete package
+- failed run partial package
+- hash verification
+- file corruption detection
+- PII masking screenshot/network
+- unauthorized download
+- retention
+- local filesystem adapter
+- zip export
+
+
+## 완료 기준
+
+
+- [ ] 정상 Run에서 필수 Evidence 파일이 생성된다.
+- [ ] 실패 Run에서도 partial package가 생성된다.
+- [ ] Manifest Schema와 SHA-256 검증이 통과한다.
+- [ ] Screenshot과 Network에 마스킹이 적용된다.
+- [ ] UI에서 A→Backend→B 증적을 순서대로 볼 수 있다.
+- [ ] 권한 있는 사용자가 ZIP을 다운로드할 수 있다.
+
+
+## 제외 범위
+
+
+- 공인 전자서명
+- 장기보존 법규 전체 구현
+- 외부 APM 저장소 의존
+
+
+## 산출물
+
+
+- Evidence Collector
+- Storage Adapter
+- Manifest/Integrity
+- Viewer/API
+- ZIP exporter
+- 테스트
+
+
+## 작업 종료 보고
+
+`templates/phase_completion_report.md` 형식으로  
+`docs/20260804/phase-reports/PHASE-12.md`를 작성하라.
+
+보고서에는 다음을 반드시 포함한다.
+
+- 구현 요약
+- 변경 파일
+- 실행한 명령
+- 테스트 결과
+- Acceptance Criteria 충족표
+- 알려진 제약
+- 다음 Phase 전달사항
+- `AGENTS.md` 변경 여부

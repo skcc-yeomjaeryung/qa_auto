@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-test.local/schemas/backend_analysis.schema.json",
+  "title": "BackendAnalysisResult",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "endpoints",
+    "requestDtos",
+    "validations",
+    "services",
+    "responseDtos",
+    "exceptions",
+    "existingTests",
+    "unresolved"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "backend-analysis/v1" },
+    "commitSha": { "type": ["string", "null"] },
+    "workspacePath": { "type": "string" },
+    "endpoints": { "type": "array" },
+    "requestDtos": { "type": "array" },
+    "validations": { "type": "array" },
+    "services": { "type": "array" },
+    "responseDtos": { "type": "array" },
+    "exceptions": { "type": "array" },
+    "existingTests": { "type": "array" },
+    "unresolved": { "type": "array" },
+    "fileHashes": { "type": "array" }
+  },
+  "additionalProperties": true
+}

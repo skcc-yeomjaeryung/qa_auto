@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qa-auto.local/schemas/run-report.schema.json",
+  "title": "QA_AUTO Run Review Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "reportId", "runId", "title", "project", "scenario",
+    "execution", "trace", "observations", "verification", "evidence", "review",
+    "sourceLineage", "generatedBy", "downloads", "missingData", "missingDataDetails"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "run-report/v1" },
+    "reportId": { "type": "string", "minLength": 1 },
+    "runId": { "type": "string", "minLength": 1 },
+    "title": { "type": "string", "minLength": 1 },
+    "project": { "$ref": "#/$defs/entity" },
+    "scenario": { "$ref": "#/$defs/scenario" },
+    "execution": { "$ref": "#/$defs/execution" },
+    "trace": { "$ref": "#/$defs/trace" },
+    "observations": { "type": "array", "items": { "$ref": "#/$defs/observation" } },
+    "verification": { "$ref": "#/$defs/verification" },
+    "evidence": { "$ref": "#/$defs/evidence" },
+    "review": { "$ref": "#/$defs/review" },
+    "sourceLineage": { "type": "array", "items": { "$ref": "#/$defs/lineage" } },
+    "generatedBy": { "$ref": "#/$defs/generatedBy" },
+    "downloads": { "$ref": "#/$defs/downloads" },
+    "missingData": { "$ref": "#/$defs/strings" },
+    "missingDataDetails": { "type": "array", "items": { "$ref": "#/$defs/missingDataDetail" } }
+  },
+  "$defs": {
+    "strings": { "type": "array", "items": { "type": "string" } },
+    "entity": {
+      "type": "object", "additionalProperties": false, "required": ["id", "name"],
+      "properties": { "id": { "type": "string" }, "name": { "type": "string" } }
+    },
+    "request": {
+      "type": "object", "additionalProperties": false, "required": ["method", "path"],
+      "properties": { "method": { "type": "string" }, "path": { "type": "string" } }
+    },
+    "scenario": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "name", "version", "serviceId", "businessPath", "sourceRoute", "destinationRoute", "request"],
+      "properties": {
+        "id": { "type": "string" }, "name": { "type": "string" }, "version": { "type": "string" },
+        "serviceId": { "type": "string" }, "businessPath": { "$ref": "#/$defs/strings" },
+        "sourceRoute": { "type": "string" }, "destinationRoute": { "type": "string" },
+        "request": { "$ref": "#/$defs/request" }
+      }
+    },
+    "execution": {
+      "type": "object", "additionalProperties": false,
+      "required": ["technicalStatus", "startedAt", "endedAt", "durationMs", "environmentName", "browserRunner", "progressPercent", "plannedStepCount", "completedStepCount", "outcomeKind", "outcomeSummary"],
+      "properties": {
+        "technicalStatus": { "type": "string" }, "startedAt": { "type": "string" }, "endedAt": { "type": "string" },
+        "durationMs": { "type": ["integer", "null"], "minimum": 0 }, "environmentName": { "type": "string" },
+        "browserRunner": { "type": "string" }, "progressPercent": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "plannedStepCount": { "type": "integer", "minimum": 0 }, "completedStepCount": { "type": "integer", "minimum": 0 },
+        "outcomeKind": { "type": "string" }, "outcomeSummary": { "type": "string" }
+      }
+    },
+    "trace": {
+      "type": "object", "additionalProperties": false,
+      "required": ["testCaseId", "agentTraceId", "backendTraceStatus", "repositoryUrl", "branch", "commitSha", "inputProfileId"],
+      "properties": {
+        "testCaseId": { "type": "string" }, "agentTraceId": { "type": "string" }, "backendTraceStatus": { "type": "string" },
+        "repositoryUrl": { "type": "string" }, "branch": { "type": "string" }, "commitSha": { "type": "string" }, "inputProfileId": { "type": "string" }
+      }
+    },
+    "observation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["stepId", "action", "status", "observation", "evidenceRefs", "missingData"],
+      "properties": {
+        "stepId": { "type": "string" }, "action": { "type": "string" }, "status": { "type": "string" },
+        "observation": { "type": "string" }, "evidenceRefs": { "$ref": "#/$defs/strings" }, "missingData": { "$ref": "#/$defs/strings" }
+      }
+    },
+    "assertion": {
+      "type": "object", "additionalProperties": false,
+      "required": ["assertionId", "field", "result", "expected", "actual", "businessReviewRequired", "evidenceRefs", "missingData"],
+      "properties": {
+        "assertionId": { "type": "string" }, "field": { "type": "string" }, "result": { "type": "string" },
+        "expected": { "type": "string" }, "actual": { "type": "string" }, "businessReviewRequired": { "type": "boolean" },
+        "evidenceRefs": { "$ref": "#/$defs/strings" }, "missingData": { "$ref": "#/$defs/strings" }
+      }
+    },
+    "verification": {
+      "type": "object", "additionalProperties": false,
+      "required": ["technicalStatus", "businessReviewRequired", "totalCount", "matchedCount", "mismatchCount", "missingCount", "reviewRequiredCount", "assertions"],
+      "properties": {
+        "technicalStatus": { "type": "string" }, "businessReviewRequired": { "type": "boolean" },
+        "totalCount": { "type": "integer", "minimum": 0 }, "matchedCount": { "type": "integer", "minimum": 0 },
+        "mismatchCount": { "type": "integer", "minimum": 0 }, "missingCount": { "type": "integer", "minimum": 0 },
+        "reviewRequiredCount": { "type": "integer", "minimum": 0 },
+        "assertions": { "type": "array", "items": { "$ref": "#/$defs/assertion" } }
+      }
+    },
+    "evidence": {
+      "type": "object", "additionalProperties": false,
+      "required": ["evidenceId", "integrityStatus", "storageStatus", "screenshotCount", "snapshotCount", "artifactCount", "maskedArtifactCount", "retentionUntil", "downloadReady", "missingData", "artifacts"],
+      "properties": {
+        "evidenceId": { "type": "string" }, "integrityStatus": { "type": "string" }, "storageStatus": { "type": "string" },
+        "screenshotCount": { "type": "integer", "minimum": 0 }, "snapshotCount": { "type": "integer", "minimum": 0 },
+        "artifactCount": { "type": "integer", "minimum": 0 }, "maskedArtifactCount": { "type": "integer", "minimum": 0 },
+        "retentionUntil": { "type": "string" }, "downloadReady": { "type": "boolean" }, "missingData": { "$ref": "#/$defs/strings" },
+        "artifacts": { "type": "array", "items": { "$ref": "#/$defs/evidenceArtifact" } }
+      }
+    },
+    "evidenceArtifact": {
+      "type": "object", "additionalProperties": false,
+      "required": ["artifactId", "type", "label", "path", "mimeType", "size", "sha256", "masked", "stage"],
+      "properties": {
+        "artifactId": { "type": "string" }, "type": { "type": "string" }, "label": { "type": "string" },
+        "path": { "type": "string" }, "mimeType": { "type": "string" }, "size": { "type": "integer", "minimum": 0 },
+        "sha256": { "type": "string" }, "masked": { "type": "boolean" }, "stage": { "type": ["string", "null"] }
+      }
+    },
+    "missingDataDetail": {
+      "type": "object", "additionalProperties": false,
+      "required": ["code", "label", "guidance", "section"],
+      "properties": {
+        "code": { "type": "string" }, "label": { "type": "string" },
+        "guidance": { "type": "string" }, "section": { "type": "string" }
+      }
+    },
+    "review": {
+      "type": "object", "additionalProperties": false,
+      "required": ["finalDecision", "hitlRequired", "checklist", "attentionItems", "guardrail"],
+      "properties": {
+        "finalDecision": { "const": "PENDING_HUMAN_REVIEW" }, "hitlRequired": { "const": true },
+        "checklist": { "$ref": "#/$defs/strings" }, "attentionItems": { "$ref": "#/$defs/strings" }, "guardrail": { "type": "string" }
+      }
+    },
+    "lineage": {
+      "type": "object", "additionalProperties": false, "required": ["sourceType", "sourceId", "description"],
+      "properties": { "sourceType": { "type": "string" }, "sourceId": { "type": "string" }, "description": { "type": "string" } }
+    },
+    "generatedBy": {
+      "type": "object", "additionalProperties": false, "required": ["agentName", "workflowId", "skillName", "traceId", "generatedAt"],
+      "properties": {
+        "agentName": { "const": "REPORT AGENT" }, "workflowId": { "const": "wf_run_report" },
+        "skillName": { "const": "run_report" }, "traceId": { "type": "string" }, "generatedAt": { "type": "string" }
+      }
+    },
+    "downloads": {
+      "type": "object", "additionalProperties": false, "required": ["html", "json", "evidenceZip"],
+      "properties": { "html": { "type": "string" }, "json": { "type": "string" }, "evidenceZip": { "type": "string" } }
+    }
+  }
+}

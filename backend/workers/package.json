@@ -1,0 +1,20 @@
+{
+  "name": "@ai-test/frontend-analyzer",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "health": "tsx src/index.ts",
+    "analyze": "tsx src/cli.ts",
+    "test": "node --import tsx --test test/*.test.ts",
+    "build": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "ts-morph": "^25.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
+}

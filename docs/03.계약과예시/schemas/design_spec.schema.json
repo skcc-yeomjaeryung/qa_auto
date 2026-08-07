@@ -1,0 +1,172 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.example/schemas/design_spec.schema.json",
+  "title": "DesignSpecArtifact",
+  "description": "UI 기획 슬라이드(PPT/이미지/PDF) 파싱 결과. 보조 Evidence이며 단독으로 Scenario/INPUT을 확정하지 않는다.",
+  "type": "object",
+  "required": [
+    "artifactId",
+    "projectId",
+    "source",
+    "slides",
+    "createdAt"
+  ],
+  "properties": {
+    "artifactId": {
+      "type": "string"
+    },
+    "projectId": {
+      "type": "string"
+    },
+    "source": {
+      "type": "object",
+      "required": ["kind", "fileName"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["ppt", "pptx", "pdf", "image", "other"]
+        },
+        "fileName": {
+          "type": "string"
+        },
+        "contentHash": {
+          "type": "string"
+        },
+        "uploadedBy": {
+          "type": "string"
+        }
+      }
+    },
+    "slides": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/slide"
+      }
+    },
+    "parser": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "version": { "type": "string" },
+        "method": {
+          "type": "string",
+          "enum": ["vision", "ocr", "manual", "hybrid"]
+        }
+      }
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "$defs": {
+    "slide": {
+      "type": "object",
+      "required": ["slideId", "top", "annotations", "grade"],
+      "properties": {
+        "slideId": {
+          "type": "string"
+        },
+        "slideIndex": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "top": {
+          "type": "object",
+          "required": ["title"],
+          "properties": {
+            "serviceOrTxnId": {
+              "type": ["string", "null"],
+              "description": "서비스/거래 아이디. 없으면 null → missing_data"
+            },
+            "title": {
+              "type": "string"
+            },
+            "instruction": {
+              "type": ["string", "null"]
+            },
+            "navPath": {
+              "type": ["string", "null"]
+            }
+          }
+        },
+        "center": {
+          "type": "object",
+          "properties": {
+            "imageRef": {
+              "type": "string",
+              "description": "artifacts 내 화면 캡처 경로"
+            },
+            "screenHint": {
+              "type": ["string", "null"]
+            }
+          }
+        },
+        "annotations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/annotation"
+          }
+        },
+        "grade": {
+          "type": "string",
+          "enum": ["hint", "candidate"],
+          "description": "코드 Evidence join 전 최대 등급"
+        },
+        "joinStatus": {
+          "type": "string",
+          "enum": ["unjoined", "partial", "joined", "missing_data"],
+          "default": "unjoined"
+        },
+        "joinedEvidenceIds": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 0.49,
+          "description": "Design Spec 단독 시 상한 0.49"
+        }
+      }
+    },
+    "annotation": {
+      "type": "object",
+      "required": ["number", "componentName", "description", "grade"],
+      "properties": {
+        "number": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "componentName": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "actionHint": {
+          "type": ["string", "null"],
+          "description": "클릭/입력 등 조작 힌트"
+        },
+        "expectedHint": {
+          "type": ["string", "null"],
+          "description": "기대 노출·후속 화면 힌트. 확정 expected 아님"
+        },
+        "grade": {
+          "type": "string",
+          "enum": ["hint", "candidate"]
+        },
+        "graphNodeCandidates": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Interaction Graph node ID 후보"
+        },
+        "missingData": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    }
+  }
+}

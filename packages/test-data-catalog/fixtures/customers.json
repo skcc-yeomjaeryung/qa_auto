@@ -1,0 +1,16 @@
+[
+  {
+    "customerId": "CUS-1001",
+    "customerName": "Synthetic Aurora Retail",
+    "riskLevel": "LOW",
+    "status": "ACTIVE",
+    "synthetic": true
+  },
+  {
+    "customerId": "CUS-2002",
+    "customerName": "Synthetic Harbor Works",
+    "riskLevel": "RESTRICTED",
+    "status": "REVIEW_REQUIRED",
+    "synthetic": true
+  }
+]

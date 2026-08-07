@@ -1,0 +1,6 @@
+{
+  "projectId": "PRJ-sample",
+  "serviceId": "customer-search",
+  "interactionGraphPath": "artifacts/analysis/IG-sample/interaction-graph.json",
+  "artifactPath": "artifacts/scenarios/SCN-sample/scenarios.json"
+}

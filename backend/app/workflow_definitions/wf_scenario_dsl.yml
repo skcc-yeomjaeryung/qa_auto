@@ -1,0 +1,73 @@
+workflow_id: wf_scenario_dsl
+version: 1.2.0
+name: Scenario DSL 에이전틱 생성 Workflow
+description: >
+  Interaction Graph를 Scenario DSL seed로 변환한 뒤,
+  LLM(또는 결정론 폴백)으로 한글 서술·바인딩 후보를 보강한다 (D-014).
+  최종 Pass/Fail·배포는 사람이 결정한다.
+
+workflow_type: code_analysis
+domain: test_automation
+owner: qa_auto_platform
+status: active
+
+decision_boundary:
+  ai_role: scenario_draft_from_graph_with_llm_narration
+  human_role: final_confirm_pass_fail_and_approval
+  prohibited_ai_actions:
+    - auto_deploy
+    - final_pass_fail_decision
+    - invent_hub_assets
+
+trigger_intents:
+  - intent_id: generate_scenario_dsl
+    aliases:
+      - 시나리오 생성
+      - Scenario DSL
+
+business_goal:
+  - Graph 근거 기반 실행 DSL 초안 생성
+  - 한글 단계 서술·바인딩 후보 보강 (Evidence 필수)
+  - serviceId로 Flow 딥링크 가능
+
+input_contract:
+  required:
+    interactionGraphPath: string
+  optional:
+    projectId: string
+    serviceId: string
+    artifactPath: string
+    interactionGraph: object
+
+required_capabilities:
+  - capability_id: QA.CODE.PROJECT_CONTEXT_DISCOVER
+  - capability_id: QA.CODE.SCENARIO_DSL
+  - capability_id: QA.CODE.SCENARIO_NARRATE
+
+logical_steps:
+  - step_id: step_00
+    name: 프로젝트 보조자료 탐색
+    required_capability: QA.CODE.PROJECT_CONTEXT_DISCOVER
+    depends_on: []
+  - step_id: step_01
+    name: Graph→Scenario DSL seed
+    required_capability: QA.CODE.SCENARIO_DSL
+    depends_on:
+      - step_00
+  - step_id: step_02
+    name: Narrate and bind (LLM/fallback)
+    required_capability: QA.CODE.SCENARIO_NARRATE
+    depends_on:
+      - step_01
+
+execution_policy:
+  execution_pattern: plan_execute_review_reduce
+  require_reviewer: true
+  require_reducer: true
+  allow_parallel_steps: false
+
+output_contract:
+  required:
+    - project_context_result
+    - scenario_dsl_result
+    - scenario_narrate_result

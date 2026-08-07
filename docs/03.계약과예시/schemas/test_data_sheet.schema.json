@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.example/schemas/test_data_sheet.schema.json",
+  "title": "TestDataSheet",
+  "description": "Excel/CSV 테스트데이터 카탈로그. Fixture/Validation 다음 입력원이며 기대값 자동 최종 승인 금지.",
+  "type": "object",
+  "required": [
+    "sheetId",
+    "projectId",
+    "source",
+    "rows",
+    "createdAt"
+  ],
+  "properties": {
+    "sheetId": {
+      "type": "string"
+    },
+    "projectId": {
+      "type": "string"
+    },
+    "source": {
+      "type": "object",
+      "required": ["kind", "fileName"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["xlsx", "xls", "csv"]
+        },
+        "fileName": {
+          "type": "string"
+        },
+        "contentHash": {
+          "type": "string"
+        },
+        "uploadedBy": {
+          "type": "string"
+        }
+      }
+    },
+    "keyColumn": {
+      "type": "string",
+      "default": "serviceOrTxnId",
+      "description": "서비스/거래 아이디 컬럼 논리명"
+    },
+    "rows": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/row"
+      }
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "$defs": {
+    "row": {
+      "type": "object",
+      "required": [
+        "rowId",
+        "serviceOrTxnId",
+        "request",
+        "approvalStatus"
+      ],
+      "properties": {
+        "rowId": {
+          "type": "string"
+        },
+        "serviceOrTxnId": {
+          "type": "string",
+          "description": "Scenario/Screen join 키"
+        },
+        "request": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "요청 INPUT 필드 맵"
+        },
+        "response": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "응답/기대 필드 맵. 승인 전 reviewRequired"
+        },
+        "businessState": {
+          "type": ["string", "null"],
+          "description": "정상/제한/미존재 등 업무상태 라벨"
+        },
+        "approvalStatus": {
+          "type": "string",
+          "enum": ["draft", "reviewRequired", "approved", "rejected"],
+          "default": "reviewRequired"
+        },
+        "linkedScenarioIds": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "piiMasked": {
+          "type": "boolean",
+          "default": true
+        },
+        "notes": {
+          "type": ["string", "null"]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+server:
+  port: 8088
+
+qauto:
+  telemetry:
+    ingest-url: http://127.0.0.1:8000/api/test-telemetry/backend
+    enabled: true
+    max-body-bytes: 8192
+
+logging:
+  pattern:
+    level: "%5p [run=%X{testRunId} seq=%X{requestSequence}]"

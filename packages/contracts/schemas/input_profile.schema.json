@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qa-auto.local/schemas/input_profile.schema.json",
+  "title": "InputProfile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "profileId",
+    "scenarioId",
+    "serviceId",
+    "version",
+    "status",
+    "policy",
+    "cases",
+    "createdAt"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "input-profile/v1" },
+    "profileId": { "type": "string" },
+    "scenarioId": { "type": "string" },
+    "serviceId": { "type": "string" },
+    "projectId": { "type": ["string", "null"] },
+    "name": { "type": "string" },
+    "version": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["DRAFT", "APPROVED", "REVOKED"]
+    },
+    "policy": {
+      "type": "object",
+      "required": ["budget", "unresolvedPolicy", "excludeDestructive", "seed"],
+      "properties": {
+        "budget": { "type": "integer", "minimum": 1 },
+        "unresolvedPolicy": {
+          "type": "string",
+          "enum": ["skip", "reviewRequired", "usePolicyDefault"]
+        },
+        "excludeDestructive": { "type": "boolean" },
+        "seed": { "type": "integer" },
+        "categories": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "pairwise": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    },
+    "cases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["caseId", "category", "inputs"],
+        "properties": {
+          "caseId": { "type": "string" },
+          "category": { "type": "string" },
+          "inputs": { "type": "object", "additionalProperties": true },
+          "expectedPath": { "type": ["string", "null"] },
+          "reviewRequired": { "type": "boolean" },
+          "sources": { "type": "array", "items": { "type": "object", "additionalProperties": true } }
+        },
+        "additionalProperties": true
+      }
+    },
+    "categoryCounts": {
+      "type": "object",
+      "additionalProperties": { "type": "integer" }
+    },
+    "approvedAt": { "type": ["string", "null"] },
+    "approvedBy": { "type": ["string", "null"] },
+    "recommendationId": { "type": ["string", "null"] },
+    "createdAt": { "type": "string" }
+  }
+}

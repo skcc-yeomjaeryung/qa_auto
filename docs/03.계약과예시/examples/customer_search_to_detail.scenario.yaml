@@ -1,0 +1,165 @@
+scenarioId: customer-search-detail-001
+name: 고객 조회 후 고객상세 화면 바인딩 검증
+description: A 고객조회 화면의 customerId 입력부터 Backend 검색 응답과 B 고객상세 화면 바인딩까지 검증한다.
+version: 1.0.0
+status: EXECUTABLE
+
+sourceRefs:
+  graphId: GRAPH-CUSTOMER-001
+  graphVersion: 1.0.0
+  commitRefs:
+    frontend: fe-commit-sha
+    backend: be-commit-sha
+
+source:
+  screen: CustomerSearchPage
+  route: /customers/search
+
+destination:
+  screen: CustomerDetailPage
+  routePattern: /customers/{customerId}
+
+inputs:
+  - name: customerId
+    type: string
+    required: true
+    semanticType: customer_identifier
+    constraints:
+      pattern: "^C[0-9]{5}$"
+    locator:
+      strategy: testId
+      value: customer-id
+    events:
+      - fill
+      - blur
+    reviewRequired: false
+
+steps:
+  - id: S1
+    action: navigate
+    target:
+      route: /customers/search
+    timeoutMs: 10000
+    evidenceRefs:
+      - FE-SCREEN-001
+
+  - id: S2
+    action: fill
+    target:
+      strategy: testId
+      value: customer-id
+    valueFrom: inputs.customerId
+    timeoutMs: 5000
+    evidenceRefs:
+      - FE-INPUT-001
+
+  - id: S3
+    action: blur
+    target:
+      strategy: testId
+      value: customer-id
+    timeoutMs: 3000
+    evidenceRefs:
+      - FE-EVENT-001
+
+  - id: S4
+    action: click
+    target:
+      strategy: testId
+      value: search-button
+    timeoutMs: 5000
+    evidenceRefs:
+      - FE-EVENT-002
+
+  - id: S5
+    action: wait_for_response
+    request:
+      method: POST
+      path: /api/customers/search
+    timeoutMs: 10000
+    evidenceRefs:
+      - MAP-001
+
+  - id: S6
+    action: verify_response
+    expect:
+      status: 200
+      schema: CustomerResponse
+    timeoutMs: 5000
+    evidenceRefs:
+      - BE-RESPONSE-001
+
+  - id: S7
+    action: verify_navigation
+    expect:
+      routePattern: /customers/{customerId}
+    timeoutMs: 10000
+    evidenceRefs:
+      - FE-ROUTE-001
+
+  - id: S8
+    action: verify_binding
+    expect:
+      mappings:
+        - responsePath: $.customerId
+          target:
+            strategy: testId
+            value: customer-id-value
+        - responsePath: $.customerName
+          target:
+            strategy: testId
+            value: customer-name
+        - responsePath: $.riskLevel
+          target:
+            strategy: testId
+            value: risk-level
+        - responsePath: $.status
+          target:
+            strategy: testId
+            value: customer-status
+    timeoutMs: 10000
+    evidenceRefs:
+      - FE-BINDING-001
+
+assertions:
+  - id: A1
+    type: value-lineage
+    severity: hard
+    expectedFrom: inputs.customerId
+    actualFrom: backend.request.customerId
+    normalize:
+      - trim
+    reviewRequired: false
+
+  - id: A2
+    type: ui-binding
+    severity: soft
+    expectedFrom: backend.response.riskLevel
+    actualFrom: ui.risk-level
+    normalize:
+      - trim
+      - uppercase
+    reviewRequired: true
+
+evidencePolicy:
+  screenshots:
+    - source-screen
+    - input-completed
+    - destination-screen
+  # agent-browser MCP: DOM snapshot + screenshot (Playwright Trace 대체)
+  snapshots: always
+  network: sanitized
+  backendLogs: required
+  hashAlgorithm: SHA-256
+  browserRunner: agent-browser-mcp
+
+hitlPolicy:
+  required: true
+  technicalPassTransitionsTo: WAITING_FOR_REVIEW
+  reviewFields:
+    - customerId
+    - customerName
+    - riskLevel
+    - status
+
+unresolved: []

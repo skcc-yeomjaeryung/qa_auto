@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qa-auto.local/schemas/input_recommendation.schema.json",
+  "title": "InputRecommendationBundle",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "recommendationId",
+    "serviceId",
+    "recommendations",
+    "generator",
+    "generatedAt"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "input-recommendation/v1" },
+    "recommendationId": { "type": "string" },
+    "scenarioId": { "type": ["string", "null"] },
+    "serviceId": { "type": "string" },
+    "projectId": { "type": ["string", "null"] },
+    "contractId": { "type": ["string", "null"] },
+    "defaults": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "건별 모드 기본 선택값 (field → value)"
+    },
+    "recommendations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/recommendedValue" }
+    },
+    "conflicts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "generator": {
+      "type": "object",
+      "required": ["version", "seed"],
+      "properties": {
+        "version": { "type": "string" },
+        "seed": { "type": "integer" },
+        "policy": { "type": "object", "additionalProperties": true }
+      },
+      "additionalProperties": true
+    },
+    "generatedAt": { "type": "string" }
+  },
+  "$defs": {
+    "dataSourceEvidence": {
+      "type": "object",
+      "required": ["source", "rank"],
+      "properties": {
+        "source": {
+          "type": "string",
+          "enum": [
+            "fixture",
+            "existing_test",
+            "schema_validation",
+            "test_data_sheet",
+            "best_practice_catalog",
+            "llm_hint",
+            "design_spec_hint",
+            "user"
+          ]
+        },
+        "rank": { "type": "integer" },
+        "ref": { "type": ["string", "null"] },
+        "frequency": { "type": ["integer", "null"] },
+        "detail": { "type": ["string", "null"] }
+      },
+      "additionalProperties": true
+    },
+    "recommendedValue": {
+      "type": "object",
+      "required": ["field", "value", "category", "sources", "selectedByDefault"],
+      "properties": {
+        "field": { "type": "string" },
+        "value": {},
+        "displayValue": { "type": ["string", "null"] },
+        "category": {
+          "type": "string",
+          "enum": [
+            "happy_path",
+            "boundary",
+            "invalid_format",
+            "missing_required",
+            "business_state",
+            "not_found",
+            "pairwise"
+          ]
+        },
+        "expectedPath": { "type": ["string", "null"] },
+        "rationale": { "type": "string" },
+        "sources": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/dataSourceEvidence" }
+        },
+        "selectedByDefault": { "type": "boolean" },
+        "reviewRequired": { "type": "boolean" },
+        "uncertain": { "type": "boolean" },
+        "masked": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    }
+  }
+}

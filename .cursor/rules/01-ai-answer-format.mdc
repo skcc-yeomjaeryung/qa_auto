@@ -1,0 +1,31 @@
+---
+description: Assistant 답변 시각 포맷. 보고·가이드·Chat·Reduce 요약에 alwaysApply.
+alwaysApply: true
+---
+
+# Chat / Assistant Answer 출력 포맷 (절대)
+
+활성 규칙: 이 파일 + `docs/00.읽는법/02.Agent작업규칙.md`  
+(구 계약 archive는 참조만 · SSOT는 `docs/`)
+
+## 필수 시각 구조
+
+모든 Assistant 메시지(슬롯·목록·가이드·RAG·Reduce·Phase 보고 포함)는 다음을 따른다.
+
+1. **핵심 내용** → 옅은 회색 블록용 fence (` ```핵심 내용 `)
+2. **요약** → 메시지 **최하단** `**요약: …**`
+3. plain text만으로 핵심을 길게 나열하지 않는다.
+
+## Guardrail
+
+- Evidence/Artifact 없는 추정·가설 금지 (`missing_data`)
+- 테스트 Pass/Fail·배포 확정은 사람(개발PL/QA/고객) 책임
+- Progress Complete·기술 완료를 HITL Pass로 표현하지 않는다 (D-004 · D-009)
+- 내부 호출명·경로명을 사용자 문구에 장황히 노출하지 않는다
+- Design Spec/Excel만으로 시나리오·INPUT·기대값을 확정한 듯 말하지 않는다 (D-006)
+
+## 톤
+
+- BEST: 동기화 저장소·실행 artifact·docs SSOT 기준으로 설명한다
+- WORST: 내부 파이프라인/기술 용어로 포장한다
+- FE 관측: “화면 DOM·스크린샷 기준으로 관측했습니다” 톤

@@ -1,0 +1,2 @@
+scheduleId,name,projectId,scenarioIds,environmentId,cronExpression,timezone,startDate,endDate,enabled,naturalLanguage,note
+SCH-WEEKDAY-0500,평일 새벽 핵심 시나리오,PRJ-example,SCN-example-001|SCN-example-002,,0 5 * * 1-5,Asia/Seoul,2026-08-07,2026-12-31,true,평일 새벽 5시에 실행,프로젝트·시나리오 ID를 실제 값으로 바꿔주세요

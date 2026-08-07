@@ -1,0 +1,10 @@
+{
+  "name": "@ai-test/contracts",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "sync-schemas": "node scripts/sync-schemas.mjs",
+    "test": "npm run sync-schemas && node --test test/*.test.mjs"
+  }
+}

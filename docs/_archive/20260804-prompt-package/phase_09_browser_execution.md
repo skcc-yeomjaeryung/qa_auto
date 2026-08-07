@@ -1,0 +1,182 @@
+# Phase 09 — agent-browser MCP 실제 브라우저 이벤트 기반 관통 실행
+
+## 이 프롬프트의 역할
+
+당신은 대형 SI 프로젝트용 AI Code-to-E2E 관통 테스트 플랫폼의 수석 개발자다.  
+프로젝트 루트에서 먼저 다음 문서를 읽고 현재 코드 상태를 점검하라.
+
+- `AGENTS.md`
+- `README.md`
+- `index.md`
+- `00_common_context.md`
+- `00_pilot_definition_of_done.md`
+- 관련 JSON Schema와 이전 Phase 완료 보고서
+
+계획 문서만 작성하지 말고, **실제 구현·테스트·문서화·완료 보고까지 한 번의 작업으로 수행**하라.  
+모호한 부분은 기존 코드와 공통 문서를 근거로 합리적인 기본값을 채택하고, 구현을 중단하는 질문으로 돌리지 말라.
+
+## Phase 목표
+
+Scenario DSL과 Input Profile을 **agent-browser MCP**로 실행해 A 화면의 실제 사용자 이벤트부터 Backend 호출과 B 화면 이동까지 수행한다.  
+통합 FE 검증의 기본 경로는 agent-browser MCP이며, Playwright MCP/Test Runner는 보완·레거시 경로로만 둔다.
+
+## 선행조건
+
+- Phase 06 Scenario DSL 완료
+- Phase 08 Input Profile 완료
+- Sample FE/BE 실행 가능
+- Cursor에 `user-agent-browser` MCP가 연결되어 있고, **사용 전 사용자 확인**을 받을 수 있음
+
+## 구현 범위
+
+- DSL→agent-browser MCP 실행 Adapter
+- 실제 browser session (open / tab)
+- snapshot(ref) 기반 입력·클릭·대기
+- network 관측·헤더 주입
+- navigation / wait
+- retry/timeout
+- run lifecycle
+- 초기 Screenshot + DOM snapshot evidence
+
+## 상세 구현 요구사항
+
+### A. 실행 엔진 (강제)
+
+1. **기본 실행 경로 = agent-browser MCP**. Playwright Test Runner를 기본으로 두지 않는다.
+2. Playwright MCP는 미해결 탐색·보완에만 선택적으로 쓰고, 사용 전 사용자에게 문의한다.
+3. agent-browser 사용 전에도 **사용자에게 사용 여부를 문의**한다. 무단 파괴적 크롤 금지.
+4. DOM property 직접 대입이나 임의 JavaScript injection으로 입력하지 않는다.
+5. 실제 사용자 이벤트에 해당하는 MCP 도구만 사용한다.
+   - `agent_browser_open`
+   - `agent_browser_snapshot` (입력 전후, 결과 화면 — interactive/`-i` 관측 권장)
+   - `agent_browser_fill` / `agent_browser_type` / `agent_browser_press`
+   - `agent_browser_select` / `agent_browser_check` / `agent_browser_uncheck`
+   - `agent_browser_click`
+   - `agent_browser_wait_for_selector` / `agent_browser_wait_for_text` / `agent_browser_wait_for_load` / `agent_browser_wait_ms`(최후 수단)
+   - `agent_browser_screenshot` (입력 직후 + 결과 화면 최소 2장, annotate 권장)
+   - `agent_browser_set_headers` (Test Run Header 주입)
+   - `agent_browser_network_requests` / `agent_browser_network_request` / `agent_browser_network_har_start` / `agent_browser_network_har_stop`
+6. `sleep` 고정 대기를 기본으로 쓰지 않는다. snapshot/ref 상태, URL, 텍스트, network, UI condition을 기다린다.
+7. 클릭·제출 전에 network 관측을 시작해 race를 방지한다.
+8. 모든 대상 Request에 Test Run Header를 주입한다.
+9. Scenario Step별 시작/종료/상태/소요시간, 사용한 ref/locator 후보를 기록한다.
+10. 정상/오류 분기에 따라 기대 Route와 UI 상태를 **snapshot 관측 결과**로만 검증한다. 없으면 `missing_data`로 표시하고 추정하지 않는다.
+11. Login/세션은 reusable fixture 또는 profile로 분리한다.
+12. 브라우저는 기본 headless/자동화 세션, 건별 디버그 모드는 가시화 옵션을 지원한다.
+13. 실패 시 Screenshot과 직전/직후 DOM snapshot을 자동 보존한다.
+14. Locator/ref 실패 시 임의로 다른 요소를 클릭하지 않고, snapshot 후보와 근거를 보고한다.
+15. 테스트 실행 Worker는 동시성 제한과 cancellation을 지원한다.
+16. AI는 관측 요약만 남기고 **Pass/Fail·배포 가능을 단정하지 않는다**. 최종 판정은 HITL이다.
+
+### B. 권장 Step 시퀀스 (FE 연계 시나리오)
+
+```text
+1) agent_browser_open (대상 FE URL)
+2) agent_browser_snapshot → 입력 컨트롤·ref 관측 (fill 전)
+3) agent_browser_fill / type / press / select / check
+4) agent_browser_snapshot → 입력값/ref 상태 대조
+5) agent_browser_screenshot (입력 직후)
+6) network 관측 시작 + Test Run Header 주입 확인
+7) agent_browser_click / submit 상당 동작
+8) wait (selector/text/load/network)
+9) agent_browser_snapshot → 후속 화면·결과 노드 관측
+10) agent_browser_screenshot (결과 화면)
+11) 관측 요약만 저장 · Pass/Fail 단정 금지 · 없으면 missing_data
+```
+
+### C. API-only 통합
+
+API-only step에는 DOM 경로를 강제하지 않는다.  
+FE 연계 step이 있으면 해당 step부터 위 agent-browser 경로를 탄다.
+
+## API·계약·데이터
+
+Run 상태:
+- `QUEUED`
+- `PREPARING`
+- `RUNNING`
+- `AUTO_PASSED`
+- `AUTO_FAILED`
+- `CANCELLED`
+- 이후 `WAITING_FOR_REVIEW`
+
+필수 API:
+- `POST /api/scenarios/{id}/runs`
+- `GET /api/runs/{runId}`
+- `POST /api/runs/{runId}/cancel`
+- `GET /api/runs/{runId}/steps`
+
+Run Step artifact 최소 필드:
+- `step_id`, `action`, `mcp_tool`, `ref_or_locator`, `status`, `started_at`, `ended_at`
+- `snapshot_path` (해당 시)
+- `screenshot_path` (해당 시)
+- `network_refs` (해당 시)
+- `observation_summary`
+- `missing_data[]`
+
+## UI 요구사항
+
+- 건별 실행 시작
+- 실시간 Step 상태
+- 현재 A/B Route
+- 사용 입력값
+- Network 대기 상태
+- 실패 Step과 Locator/ref
+- Snapshot/Screenshot 미리보기
+- Debug/headed 옵션은 권한 있는 사용자에게만 제공
+- agent-browser 사용 동의/확인 상태 표시
+
+## 필수 테스트
+
+- 정상 고객 A→B (agent-browser MCP)
+- validation 오류
+- 제한 고객 branch
+- Backend 404/500
+- network timeout
+- locator/ref missing → missing_data / 후보 보고
+- cancellation
+- screenshot + snapshot on failure
+- header injection
+- 사용자 미동의 시 실행 차단
+
+## 완료 기준
+
+- [ ] agent-browser MCP로 실제 A 화면 입력 이벤트를 발생시킨다.
+- [ ] 실제 조회 버튼 이벤트로 Backend를 호출한다.
+- [ ] B 화면 또는 기대 오류 상태에 도달한다.
+- [ ] Test Run Header가 Network 요청에 포함된다.
+- [ ] Step 결과와 실패 원인이 저장된다.
+- [ ] 실패 시 Screenshot과 DOM snapshot이 생성된다.
+- [ ] 입력 직후·결과 화면 Screenshot이 최소 2장 보존된다.
+- [ ] Pass/Fail 최종 확정 UI/문구가 없고 HITL 대기로 연결된다.
+
+## 제외 범위
+
+- Backend 로그 수집 완성
+- 최종 Binding 비교
+- 고객 HITL
+- Playwright Test Runner를 기본 엔진으로 유지하는 설계
+
+## 산출물
+
+- agent-browser MCP Runner / Adapter
+- DSL 실행 Adapter
+- Run API/UI
+- 실행 테스트
+- 디버깅 가이드 (snapshot/ref, screenshot, network)
+
+## 작업 종료 보고
+
+`templates/phase_completion_report.md` 형식으로  
+`docs/20260804/phase-reports/PHASE-09.md`를 작성하라.
+
+보고서에는 다음을 반드시 포함한다.
+
+- 구현 요약
+- 변경 파일
+- 실행한 명령
+- 테스트 결과
+- Acceptance Criteria 충족표
+- 알려진 제약
+- 다음 Phase 전달사항
+- `AGENTS.md` 변경 여부

@@ -1,0 +1,163 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.example/schemas/evidence_manifest.schema.json",
+  "title": "EvidenceManifest",
+  "type": "object",
+  "required": [
+    "evidenceId",
+    "runId",
+    "ownerUserId",
+    "scenario",
+    "commitRefs",
+    "inputProfile",
+    "technicalStatus",
+    "reviewStatus",
+    "artifacts",
+    "integrityStatus",
+    "storageStatus",
+    "retentionUntil",
+    "createdAt"
+  ],
+  "properties": {
+    "evidenceId": {
+      "type": "string"
+    },
+    "runId": {
+      "type": "string"
+    },
+    "projectId": {
+      "type": ["string", "null"]
+    },
+    "ownerUserId": {
+      "type": "string"
+    },
+    "scenario": {
+      "type": "object",
+      "required": [
+        "id",
+        "version"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      }
+    },
+    "commitRefs": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "inputProfile": {
+      "type": "object",
+      "required": [
+        "id",
+        "version"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      }
+    },
+    "technicalStatus": {
+      "enum": [
+        "AUTO_PASSED",
+        "AUTO_FAILED",
+        "CANCELLED",
+        "PARTIAL",
+        "TECHNICALLY_MATCHED",
+        "TECHNICAL_MISMATCH",
+        "BLOCKED",
+        "WAITING_FOR_REVIEW"
+      ]
+    },
+    "reviewStatus": {
+      "enum": [
+        "WAITING_FOR_REVIEW",
+        "APPROVED",
+        "REJECTED",
+        "RETEST_REQUESTED",
+        "DATA_CORRECTION_REQUIRED"
+      ]
+    },
+    "correlation": {
+      "type": "object"
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "artifactId",
+          "path",
+          "mimeType",
+          "size",
+          "sha256",
+          "createdAt"
+        ],
+        "properties": {
+          "artifactId": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "mimeType": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{64}$"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "masked": {
+            "type": "boolean"
+          },
+          "stage": {
+            "type": ["string", "null"]
+          }
+        }
+      }
+    },
+    "integrityStatus": {
+      "enum": [
+        "complete",
+        "partial",
+        "corrupted"
+      ]
+    },
+    "storageStatus": {
+      "enum": ["ready", "write_failed"]
+    },
+    "missingData": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "retentionUntil": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

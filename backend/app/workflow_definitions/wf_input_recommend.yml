@@ -1,0 +1,62 @@
+workflow_id: wf_input_recommend
+version: 1.0.0
+name: Input 추천 · Profile 초안 Workflow
+description: >
+  Component Contract와 Catalog/Fixture/Test Evidence로 추천 INPUT과
+  배치용 Input Profile 초안을 생성한다. 최종 승인은 사람이 한다.
+
+workflow_type: code_analysis
+domain: test_automation
+owner: qa_auto_platform
+status: active
+
+decision_boundary:
+  ai_role: recommend_inputs_and_draft_profile
+  human_role: approve_input_profile_and_pass_fail
+  prohibited_ai_actions:
+    - auto_deploy
+    - final_pass_fail_decision
+    - invent_hub_assets
+    - random_identifier_generation
+
+trigger_intents:
+  - intent_id: recommend_inputs
+    aliases:
+      - 입력값 추천
+      - Input Profile
+
+business_goal:
+  - 정상·경계·오류·업무상태 추천값 제공
+  - 출처·근거·예상 경로 표시
+  - 승인 가능한 배치 Profile 초안
+
+input_contract:
+  required:
+    componentContractPath: string
+  optional:
+    backendAnalysisPath: string
+    frontendAnalysisPath: string
+    scenarioId: string
+    serviceId: string
+    seed: number
+    buildProfile: boolean
+    budget: number
+
+required_capabilities:
+  - capability_id: QA.CODE.INPUT_RECOMMEND
+
+logical_steps:
+  - step_id: step_01
+    name: Recommend inputs
+    required_capability: QA.CODE.INPUT_RECOMMEND
+    depends_on: []
+
+execution_policy:
+  execution_pattern: plan_execute_review_reduce
+  require_reviewer: true
+  require_reducer: true
+  allow_parallel_steps: false
+
+output_contract:
+  required:
+    - input_recommend_result

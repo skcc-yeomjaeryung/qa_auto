@@ -1,0 +1,96 @@
+# Capability Registry — canonical IDs (교보재 Hub/Capability 규칙)
+# alias는 정규화용이며 실행 기준이 아니다.
+capabilities:
+  - capability_id: QA.PLATFORM.BASE
+    description: Platform base capability parent
+    domain: test_automation
+  - capability_id: QA.PLATFORM.HEALTH_PING
+    parent_capability_id: QA.PLATFORM.BASE
+    description: Platform health smoke ping (SDD Gate)
+    domain: test_automation
+    aliases:
+      - qa.platform.health_ping
+      - health.ping
+  - capability_id: QA.CODE.ANALYZE
+    description: Code static analysis parent
+    domain: test_automation
+  - capability_id: QA.CODE.FRONTEND_ANALYZE
+    parent_capability_id: QA.CODE.ANALYZE
+    description: Frontend TypeScript/React/Next static analysis
+    domain: test_automation
+    aliases:
+      - qa.code.frontend_analyze
+      - frontend.analyze
+  - capability_id: QA.CODE.BACKEND_SPRING_ANALYZE
+    parent_capability_id: QA.CODE.ANALYZE
+    description: Spring Backend static analysis (Python Tool, D-010)
+    domain: test_automation
+    aliases:
+      - qa.code.backend_spring_analyze
+      - backend.spring.analyze
+  - capability_id: QA.CODE.API_MAP
+    parent_capability_id: QA.CODE.ANALYZE
+    description: Frontend apiCalls to Backend endpoints mapping
+    domain: test_automation
+    aliases:
+      - qa.code.api_map
+      - api.map
+  - capability_id: QA.CODE.INTERACTION_GRAPH
+    parent_capability_id: QA.CODE.ANALYZE
+    description: A to API to B Interaction Graph composition
+    domain: test_automation
+    aliases:
+      - qa.code.interaction_graph
+      - interaction.graph
+  - capability_id: QA.CODE.SCENARIO_DSL
+    parent_capability_id: QA.CODE.ANALYZE
+    description: Interaction Graph to Scenario DSL
+    domain: test_automation
+    aliases:
+      - qa.code.scenario_dsl
+      - scenario.dsl
+  - capability_id: QA.CODE.PROJECT_CONTEXT_DISCOVER
+    parent_capability_id: QA.CODE.ANALYZE
+    description: Project CSV/PPT supporting context discovery before scenario generation
+    domain: test_automation
+    aliases:
+      - qa.code.project_context_discover
+      - project.context.discover
+  - capability_id: QA.CODE.SCENARIO_NARRATE
+    parent_capability_id: QA.CODE.ANALYZE
+    description: Scenario DSL seed Korean narration and binding candidates (D-014)
+    domain: test_automation
+    aliases:
+      - qa.code.scenario_narrate
+      - scenario.narrate
+  - capability_id: QA.CODE.COMPONENT_CONTRACT
+    parent_capability_id: QA.CODE.ANALYZE
+    description: A/B screen Input Output Component Contract
+    domain: test_automation
+    aliases:
+      - qa.code.component_contract
+      - component.contract
+  - capability_id: QA.CODE.INPUT_RECOMMEND
+    parent_capability_id: QA.CODE.ANALYZE
+    description: Recommended INPUT values and Input Profile
+    domain: test_automation
+    aliases:
+      - qa.code.input_recommend
+      - input.recommend
+  - capability_id: QA.CODE.EXECUTE
+    description: Execution parent (browser / API runs)
+    domain: test_automation
+  - capability_id: QA.CODE.BROWSER_EXECUTE
+    parent_capability_id: QA.CODE.EXECUTE
+    description: agent-browser A to B scenario execution
+    domain: test_automation
+    aliases:
+      - qa.code.browser_execute
+      - browser.execute
+  - capability_id: QA.RUN.REPORT_GENERATE
+    parent_capability_id: QA.CODE.EXECUTE
+    description: 실행 이력·검증·증적 근거를 고정 계약의 HITL 검토 리포트로 생성
+    domain: test_automation
+    aliases:
+      - qa.run.report_generate
+      - run.report.generate

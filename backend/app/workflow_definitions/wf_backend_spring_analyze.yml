@@ -1,0 +1,69 @@
+# =============================================================================
+# Backend Spring Analyze Workflow
+# -----------------------------------------------------------------------------
+# 교보재: docs/05.템플릿/few-shot/template_workflow.yml
+# Graph 관련 필드(그래프, 노드, 엣지)는 넣지 않는다.
+# =============================================================================
+
+workflow_id: wf_backend_spring_analyze
+version: 1.0.0
+name: Backend Spring 정적 분석 Workflow
+description: >
+  Phase 01에서 pin된 Spring Backend workspace를 Python Tool로 정적 분석하여
+  Endpoint·DTO·Validation·Service·Exception·MockMvc Evidence를 산출한다.
+  AI는 분석 재료만 제공하고, 최종 Pass/Fail·배포는 사람이 결정한다.
+
+workflow_type: code_analysis
+domain: test_automation
+owner: qa_auto_platform
+status: active
+
+decision_boundary:
+  ai_role: static_analysis_draft_and_observation
+  human_role: final_pass_fail_and_approval
+  prohibited_ai_actions:
+    - auto_deploy
+    - final_pass_fail_decision
+    - invent_hub_assets
+    - invent_endpoints_without_evidence
+
+trigger_intents:
+  - intent_id: analyze_backend
+    aliases:
+      - 백엔드 분석
+      - BE 분석
+      - spring analyze
+
+business_goal:
+  - Spring Endpoint·DTO·Validation·Service를 근거와 함께 추출한다
+  - 해석 실패는 unresolved로 남긴다
+
+input_contract:
+  required:
+    workspacePath: string
+  optional:
+    commitSha: string
+    projectId: string
+    analysisId: string
+    artifactPath: string
+    progressPath: string
+    fileTotal: integer
+
+required_capabilities:
+  - capability_id: QA.CODE.BACKEND_SPRING_ANALYZE
+
+logical_steps:
+  - step_id: step_01
+    name: Spring Backend AST 분석
+    required_capability: QA.CODE.BACKEND_SPRING_ANALYZE
+    depends_on: []
+
+execution_policy:
+  execution_pattern: plan_execute_review_reduce
+  require_reviewer: true
+  require_reducer: true
+  allow_parallel_steps: false
+
+output_contract:
+  required:
+    - backend_analysis_result

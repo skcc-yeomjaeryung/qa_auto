@@ -1,0 +1,62 @@
+workflow_id: wf_component_contract
+version: 1.0.0
+name: Component Contract 생성 Workflow
+description: >
+  FE/BE 분석 Evidence와 UI Adapter로 A/B Component Contract 초안을 생성한다.
+  최종 Pass/Fail·배포는 사람이 결정한다.
+
+workflow_type: code_analysis
+domain: test_automation
+owner: qa_auto_platform
+status: active
+
+decision_boundary:
+  ai_role: contract_draft_from_code_evidence
+  human_role: final_confirm_pass_fail_and_approval
+  prohibited_ai_actions:
+    - auto_deploy
+    - final_pass_fail_decision
+    - invent_hub_assets
+
+trigger_intents:
+  - intent_id: build_component_contract
+    aliases:
+      - 컴포넌트 계약
+      - Component Contract
+
+business_goal:
+  - A 화면 필수 입력·Locator·이벤트 계약
+  - B 화면 응답 바인딩 계약
+  - FE/BE validation 불일치 표시
+
+input_contract:
+  required:
+    frontendAnalysisPath: string
+  optional:
+    backendAnalysisPath: string
+    interactionGraphPath: string
+    adapterPath: string
+    scenarioId: string
+    scenarioDefinition: object
+    serviceId: string
+    projectId: string
+    artifactPath: string
+
+required_capabilities:
+  - capability_id: QA.CODE.COMPONENT_CONTRACT
+
+logical_steps:
+  - step_id: step_01
+    name: Build Component Contract
+    required_capability: QA.CODE.COMPONENT_CONTRACT
+    depends_on: []
+
+execution_policy:
+  execution_pattern: plan_execute_review_reduce
+  require_reviewer: true
+  require_reducer: true
+  allow_parallel_steps: false
+
+output_contract:
+  required:
+    - component_contract_result

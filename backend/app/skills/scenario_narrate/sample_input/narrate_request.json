@@ -1,0 +1,26 @@
+{
+  "projectId": "PRJ-demo",
+  "serviceId": "multi",
+  "artifactPath": "/tmp/scenarios.json",
+  "scenarios": [
+    {
+      "scenarioId": "SCN-demo-1",
+      "serviceId": "post-customers-search",
+      "name": "post-customers-search: A→API→B draft",
+      "steps": [
+        {
+          "id": "S1",
+          "action": "navigate",
+          "target": { "route": "/customers/search" }
+        },
+        {
+          "id": "S2",
+          "action": "wait_for_response",
+          "request": { "method": "POST", "path": "/api/customers/search" }
+        }
+      ],
+      "inputs": [{ "name": "customerId", "type": "string" }],
+      "unresolved": []
+    }
+  ]
+}

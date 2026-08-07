@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-test.local/schemas/api_mapping.schema.json",
+  "title": "ApiMappingResult",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "mappingSetId",
+    "mappings",
+    "unmappedFrontendCalls",
+    "unmappedBackendEndpoints",
+    "summary"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "api-mapping/v1" },
+    "mappingSetId": { "type": "string" },
+    "projectId": { "type": ["string", "null"] },
+    "frontendAnalysisId": { "type": ["string", "null"] },
+    "backendAnalysisId": { "type": ["string", "null"] },
+    "mappings": { "type": "array" },
+    "unmappedFrontendCalls": { "type": "array" },
+    "unmappedBackendEndpoints": { "type": "array" },
+    "summary": { "type": "object" }
+  },
+  "additionalProperties": true
+}

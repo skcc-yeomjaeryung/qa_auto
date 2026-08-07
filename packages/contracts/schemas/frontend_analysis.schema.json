@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-test.local/schemas/frontend_analysis.schema.json",
+  "title": "FrontendAnalysisResult",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "screens",
+    "components",
+    "inputs",
+    "events",
+    "validations",
+    "apiCalls",
+    "routeTransitions",
+    "bindings",
+    "existingTests",
+    "unresolved"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "frontend-analysis/v1" },
+    "commitSha": { "type": ["string", "null"] },
+    "workspacePath": { "type": "string" },
+    "analyzedAt": { "type": "string" },
+    "screens": { "type": "array" },
+    "components": { "type": "array" },
+    "inputs": { "type": "array" },
+    "events": { "type": "array" },
+    "validations": { "type": "array" },
+    "apiCalls": { "type": "array" },
+    "routeTransitions": { "type": "array" },
+    "bindings": { "type": "array" },
+    "existingTests": { "type": "array" },
+    "unresolved": { "type": "array" },
+    "fileHashes": { "type": "array" }
+  },
+  "additionalProperties": true
+}

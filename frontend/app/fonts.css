@@ -1,0 +1,38 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap");
+
+/* KoPubDotum — 예시 frontend(styles/fonts.css)와 동일 역할 매핑 */
+@font-face {
+  font-family: "KoPubDotum";
+  src: url("/font/KoPubDotumLight.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "KoPubDotum";
+  src: url("/font/KoPubDotumMedium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "KoPubDotum";
+  src: url("/font/KoPubDotumBold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --font-title: "Poppins", "Noto Sans KR", "KoPubDotum", -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-heading: "Poppins", "Noto Sans KR", "KoPubDotum", -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-body: "Poppins", "Noto Sans KR", "KoPubDotum", -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-weight-title: 600;
+  --font-weight-heading: 500;
+  --font-weight-body: 400;
+}

@@ -1,0 +1,68 @@
+# =============================================================================
+# API Map Workflow
+# -----------------------------------------------------------------------------
+# 교보재: docs/05.템플릿/few-shot/template_workflow.yml
+# =============================================================================
+
+workflow_id: wf_api_map
+version: 1.0.0
+name: Frontend↔Backend API 매핑 Workflow
+description: >
+  Frontend apiCalls와 Backend endpoints를 Method/Path 기준으로 매핑하고
+  필드·validation 불일치를 표시한다. 다중 후보는 자동 확정하지 않으며
+  최종 Pass/Fail·배포는 사람이 결정한다.
+
+workflow_type: code_analysis
+domain: test_automation
+owner: qa_auto_platform
+status: active
+
+decision_boundary:
+  ai_role: mapping_draft_and_mismatch_observation
+  human_role: final_confirm_pass_fail_and_approval
+  prohibited_ai_actions:
+    - auto_deploy
+    - final_pass_fail_decision
+    - invent_hub_assets
+    - auto_confirm_ambiguous_mappings
+
+trigger_intents:
+  - intent_id: map_apis
+    aliases:
+      - API 매핑
+      - FE BE 매핑
+      - api map
+
+business_goal:
+  - FE apiCalls와 BE endpoints를 근거와 함께 연결한다
+  - 불일치·다중 후보·미매핑을 명시한다
+
+input_contract:
+  required:
+    frontendAnalysisPath: string
+    backendAnalysisPath: string
+  optional:
+    projectId: string
+    frontendAnalysisId: string
+    backendAnalysisId: string
+    artifactPath: string
+    mappingSetId: string
+
+required_capabilities:
+  - capability_id: QA.CODE.API_MAP
+
+logical_steps:
+  - step_id: step_01
+    name: FE↔BE API 매핑
+    required_capability: QA.CODE.API_MAP
+    depends_on: []
+
+execution_policy:
+  execution_pattern: plan_execute_review_reduce
+  require_reviewer: true
+  require_reducer: true
+  allow_parallel_steps: false
+
+output_contract:
+  required:
+    - api_mapping_result

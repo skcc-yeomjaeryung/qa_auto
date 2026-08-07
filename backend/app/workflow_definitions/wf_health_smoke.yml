@@ -1,0 +1,65 @@
+# =============================================================================
+# Platform Health Smoke Workflow
+# -----------------------------------------------------------------------------
+# 교보재: docs/05.템플릿/few-shot/template_workflow.yml
+# Graph 관련 필드(그래프, 노드, 엣지)는 넣지 않는다.
+# Skill/Agent ID를 직접 고정하지 않는다 — capability만 선언.
+# =============================================================================
+
+workflow_id: wf_health_smoke
+version: 1.0.0
+name: 플랫폼 Health Smoke Workflow
+description: >
+  SDD Gate용 최소 Workflow다. QA.PLATFORM.HEALTH_PING capability로
+  health ping script를 실행해 Hub·Plan·ToolRuntime 경로를 검증한다.
+  AI는 실행 관측 재료만 제공하고, 최종 Pass/Fail·배포는 사람이 결정한다.
+
+workflow_type: platform_utility
+domain: test_automation
+owner: qa_auto_platform
+status: active
+
+decision_boundary:
+  ai_role: execution_support_and_observation
+  human_role: final_pass_fail_and_approval
+  prohibited_ai_actions:
+    - auto_deploy
+    - final_pass_fail_decision
+    - invent_hub_assets
+
+trigger_intents:
+  - intent_id: platform_health_smoke
+    aliases:
+      - 헬스 스모크
+      - health ping
+      - 플랫폼 헬스 체크
+
+business_goal:
+  - Workflow Hub → Planner → Plan → Tool script 경로가 동작함을 검증한다
+  - Pass/Fail·배포 확정 없이 구조적 실행 재료만 남긴다
+
+input_contract:
+  required: {}
+  optional:
+    notes: string
+    echo: object
+
+# Workflow는 Skill/Agent ID를 직접 고정하지 않는다.
+required_capabilities:
+  - capability_id: QA.PLATFORM.HEALTH_PING
+
+logical_steps:
+  - step_id: step_01
+    name: Health ping 실행
+    required_capability: QA.PLATFORM.HEALTH_PING
+    depends_on: []
+
+execution_policy:
+  execution_pattern: plan_execute_review_reduce
+  require_reviewer: true
+  require_reducer: true
+  allow_parallel_steps: false
+
+output_contract:
+  required:
+    - health_ping_result

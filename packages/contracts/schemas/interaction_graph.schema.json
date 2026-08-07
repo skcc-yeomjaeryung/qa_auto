@@ -1,0 +1,208 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.example/schemas/interaction_graph.schema.json",
+  "title": "InteractionGraph",
+  "type": "object",
+  "required": [
+    "graphId",
+    "repositorySetId",
+    "version",
+    "commitRefs",
+    "nodes",
+    "edges",
+    "generatedAt"
+  ],
+  "properties": {
+    "graphId": {
+      "type": "string"
+    },
+    "repositorySetId": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "commitRefs": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/node"
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/edge"
+      }
+    },
+    "unresolved": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "$defs": {
+    "evidence": {
+      "type": "object",
+      "required": [
+        "repositoryId",
+        "commitSha",
+        "file",
+        "startLine",
+        "endLine",
+        "extractor"
+      ],
+      "properties": {
+        "repositoryId": {
+          "type": "string"
+        },
+        "commitSha": {
+          "type": "string"
+        },
+        "file": {
+          "type": "string"
+        },
+        "startLine": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "endLine": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "extractor": {
+          "type": "string"
+        }
+      }
+    },
+    "node": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "name",
+        "attributes",
+        "evidence",
+        "confidence",
+        "verificationStatus"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "screen",
+            "component",
+            "input",
+            "event",
+            "validation",
+            "frontend_api_call",
+            "backend_endpoint",
+            "request_dto",
+            "service",
+            "response_dto",
+            "route_transition",
+            "binding",
+            "assertion"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "attributes": {
+          "type": "object"
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/evidence"
+          }
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "verificationStatus": {
+          "enum": [
+            "static-confirmed",
+            "test-confirmed",
+            "runtime-confirmed",
+            "inferred",
+            "unresolved"
+          ]
+        }
+      }
+    },
+    "edge": {
+      "type": "object",
+      "required": [
+        "id",
+        "from",
+        "to",
+        "type",
+        "confidence",
+        "evidence"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "from": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "contains",
+            "triggers",
+            "validates",
+            "calls",
+            "receives",
+            "returns",
+            "navigates_to",
+            "binds_to",
+            "asserts",
+            "branches_to"
+          ]
+        },
+        "condition": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "dataMappings": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/evidence"
+          }
+        }
+      }
+    }
+  }
+}

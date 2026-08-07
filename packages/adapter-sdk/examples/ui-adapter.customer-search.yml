@@ -1,0 +1,56 @@
+# UI Adapter — custom SI component → native event/locator mapping
+# Used by component_contract Skill (Phase 07). Hint only when DOM Evidence missing.
+
+adapterId: ui-adapter.customer-search
+version: 1.0.0
+serviceId: customer-search
+
+components:
+  - name: BizInput
+    mapsTo: native-input
+    events: [fill, change, blur]
+    locatorPreference: [testId, label, name]
+    valueProp: value
+    onChangeProp: onChange
+
+  - name: BizButton
+    mapsTo: native-button
+    events: [click]
+    locatorPreference: [testId, role, label]
+
+  - name: button
+    mapsTo: native-button
+    events: [click]
+    locatorPreference: [testId, role, label]
+
+bindings:
+  # B screen response JSONPath → UI locator (code Evidence preferred when present)
+  - field: customerId
+    responsePath: $.customerId
+    testId: customer-detail-id
+    normalize: [trim]
+  - field: customerName
+    responsePath: $.customerName
+    testId: customer-detail-name
+    normalize: [trim]
+  - field: riskLevel
+    responsePath: $.riskLevel
+    testId: customer-detail-risk
+    normalize: [trim, uppercase]
+  - field: status
+    responsePath: $.status
+    testId: customer-detail-status
+    normalize: [trim]
+
+screenshotMask:
+  - id: mask-customer-id-input
+    testId: customer-id-input
+    reason: identifier_pii_candidate
+  - id: mask-customer-detail-id
+    testId: customer-detail-id
+    reason: identifier_pii_candidate
+
+semanticHints:
+  customerId: customer_identifier
+  customer-id: customer_identifier
+  customer-id-input: customer_identifier

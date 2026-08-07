@@ -1,0 +1,179 @@
+---
+description: AI_TEST Code-to-E2E 플랫폼의 절대 구조·실행 규칙. 모든 Cursor 작업 전에 반드시 적용한다.
+alwaysApply: true
+---
+
+# AI_TEST 절대 아키텍처 · 실행 규칙
+
+이 프로젝트는 `AI_TEST`이며, **Code-to-E2E 관통 테스트 플랫폼**을
+`docs/` 바이블(SSOT) 기반으로 순차 Phase 구현한다.
+
+작업 시작 시 반드시 `docs/index.md`를 읽고, index가 가리키는 상세 지침만 따른다.
+읽기 순서·체크리스트는 `AGENTS.md`, `docs/00.읽는법/` 을 따른다.
+
+# 0. SSOT
+
+## 반드시
+
+```text
+docs/ = 유일한 바이블 (SSOT)
+docs/04.Phase실행바이블/ = 순차 실행 본체
+한 세션 = 한 Phase
+Gate 실패 = 다음 Phase 금지
+현재 Phase = docs/index.md 포인터 (지금: 14.배치테스트)
+```
+
+## 읽기 순서 (`docs/index.md` 고정)
+
+```text
+1. docs/continue/NEXT.md
+2. docs/index.md
+3. AGENTS.md
+4. docs/00.읽는법/*
+5. docs/01.제품과완료기준/*
+6. docs/04.Phase실행바이블/README.md
+7. 현재 Phase 문서 1개만
+```
+
+## 절대 금지
+
+```text
+docs/_archive/ 또는 루트 옛 프롬프트 패키지를 SSOT로 취급
+Hub에 없는 Workflow/Skill/Tool을 LLM·코드가 발명·우회
+Graph Hub · graph_manifest.yml · Graph Registry
+여러 Phase를 한 세션에 섞음
+AI가 Pass/Fail·배포를 최종 확정 (DOM·스크린샷만으로도 단정 금지)
+근거 없는 Endpoint·기대값·파라미터 확정 → missing_data
+Design Spec/Excel만으로 Scenario·INPUT·기대값 확정 (보조 hint만)
+Figma 없이 Flow/Progress UI 임의 발명
+agent-browser / Playwright MCP 무단·파괴적 사용 (사용 전 사용자 문의)
+Gate 실패인데 다음 Phase로 진행
+Playwright Test Runner를 기본 브라우저 엔진으로 되돌리기
+apps/ · 루트 workers/ 재도입
+```
+
+관리형 Hub는 **Workflow Hub + Skill Hub만** (D-012).  
+Graph는 Hub가 아니다 — `langgraph_runtime/` 공통 Plan 실행 엔진만 사용한다.  
+상세: `docs/02.아키텍처/05.BackendSDD구조.md`
+
+---
+
+## 1. 권장 모노레포 책임 경계
+
+D-011 이후 루트는 `frontend/` · `backend/` 강제. 구 `apps/` · 루트 `workers/` 재도입 금지.  
+D-012: `backend/` 는 NH_AML 정렬 SDD (Hub + core + LangGraph).
+
+```text
+frontend/                        = Next.js Web Console (D-011)
+backend/app/                     = FastAPI + SDD core + Hubs (D-012)
+backend/app/workflow_definitions/= Workflow Hub
+backend/app/skills/              = Skill Hub
+backend/app/core/                = runtime·planning·execution·quality + registries
+backend/app/langgraph_runtime/   = 공통 plan_execution_graph
+backend/workers/                 = Skill script가 호출하는 중용량 analyzer (재도입)
+packages/contracts/              = JSON Schema · generated models
+packages/adapter-sdk/            = 사내 프레임워크 확장점
+packages/test-data-catalog/      = Best Practice 데이터
+sample-targets/                  = 분석·매핑 대상 FE/BE (플랫폼과 분리)
+infra/                           = docker-compose · postgres · redis
+docs/                            = 바이블 SSOT
+artifacts/                       = analysis · scenarios · test-runs · evidence
+```
+
+금지: `apps/` · 루트 `workers/` 재도입  
+상세: `docs/02.아키텍처/02.모노레포구조.md` · D-011 · D-012  
+스키마: `docs/03.계약과예시/schemas/`
+
+### 1.2 Structured Output
+
+* 입출력은 Schema(Pydantic/JSON Schema)로 정의·검증한다.
+* 임의 dict/문자열 비정형 응답을 계약 없이 쓰지 않는다.
+
+### 1.3 LLM Client
+
+* 호출마다 Client를 재생성하지 않는다. 싱글턴/팩토리 + 주입.
+
+### 1.4 LLM 역할
+
+* 요약·설명·후보 추천만
+* Commit/파일/라인·Endpoint·기대값 사실 조작 금지
+* Design Spec·Excel 단독 확정 금지 (D-006)
+* 출력은 Schema 검증 + Evidence 참조 후에만 저장
+
+---
+
+## 2. Phase Runtime
+
+```text
+START → 현재 Phase 문서 실행 → Gate 검증 → 완료 보고 → 포인터 갱신 → END
+```
+
+완료 보고: `docs/06.완료보고/PHASE-XX.md`  
+템플릿: `docs/05.템플릿/01.Phase완료보고서.md`  
+계획만 쓰지 말고 구현·테스트·문서·완료 보고까지 수행한다.
+
+### 2.1 Agentic Core 공식 경로 (D-016)
+
+```text
+메뉴/API → PlatformRunnerAdapter → AgentRuntime
+  → LangGraph route → plan → execute → review → reduce → response
+```
+
+- 외부 호출 facade는 `app.core.runtime.AgentRuntime` 하나다.
+- 공식 책임 package는 `planning`, `execution`, `quality`, `runtime`이다.
+- 제거된 `core/planner`, `core/orchestrator`, `core/reviewer`, `core/reducer` wrapper를 되살리지 않는다.
+- 분석·매핑·그래프·시나리오·입력 추천·브라우저 실행·리포트 생성은 등록 Workflow를 경유한다.
+- CRUD service는 허용하지만 Agentic 판단·모델 선택·Skill 실행을 service에 중복 구현하지 않는다.
+- 모델 선택과 실제 호출 완료 영수증을 구분하며 chain-of-thought는 수집·노출하지 않는다.
+- 모델 profile은 SQLite, API Key 원문은 운영체제 Keychain에 저장한다. 테스트/명시적 fallback만 메모리 store를 쓴다.
+
+---
+
+## 3. 도메인 Guardrail (요약)
+
+상세: `02-test-automation-domain.mdc`, `docs/01.제품과완료기준/`
+
+```text
+Pass/Fail·배포 최종 확정 금지 (HITL)
+missing_data — 추정 금지
+계산·파싱·집계·그래프 수치 확정은 script/rule
+Evidence 없는 품질 단정 금지
+FE 실행 기본 = agent-browser MCP
+보조 Evidence = Design Spec / Excel (단독 확정 금지)
+Flow UI = Figma User Flow Kit (D-008)
+Progress UI = Figma Progress Bar Kit (D-009, Complete≠HITL)
+임의 sleep 금지 · DOM 직접 주입 금지
+Secret/Token/PII 미저장 · Pilot/Sandbox · destructive 기본 차단
+```
+
+---
+
+## 4. Logging
+
+공용 logger만. print 금지. raw CoT/raw_prompt 저장 금지.
+
+---
+
+## 5. MCP
+
+- **agent-browser MCP**: 통합 FE 기본 — snapshot/fill/click/screenshot
+- Playwright MCP: 보완 경로 — **사용 전 사용자 문의**
+- Context7: 라이브러리 문서
+- Figma MCP: UI 설계 대조
+  - Flow UI (D-008): User Flow Kit `qpZeClozlSVQd6j8Od8P9x` · `0:1` / `1:319`
+    — `docs/04.Phase실행바이블/05.InteractionGraph.md`
+  - Progress UI (D-009): Progress Bar Kit `HLWN6f7fxSVMIxoZtW6SIc` · `799:98620`
+    — `docs/02.아키텍처/04.진행상태UI.md`
+    — 여정: 프로젝트→저장소→시나리오생성→목록→테스트실행
+
+agent-browser·Figma MCP도 **사용 전 사용자 문의**. 무단 파괴적 크롤 금지.
+
+---
+
+## 6. 컨텍스트 · 보고
+
+- 입구: `docs/index.md` · 앵커: `AGENTS.md`
+- memory: `docs/07.작업메모리/`
+- 보고: `docs/06.완료보고/` (Gate) · `docs/report/YYYYMMDD/{phase}_{n}.md` (회차, `03-post-report.mdc`)
+- 의사결정: `docs/02.아키텍처/03.의사결정기록.md` (D-001~D-016)
+- 메뉴↔Workflow: `docs/08.메뉴와워크플로우/index.md`

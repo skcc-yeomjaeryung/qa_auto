@@ -1,0 +1,202 @@
+---
+description: Code-to-E2E 도메인 Guardrail. 제품 약속·HITL·A→API→B·agent-browser·Figma UI 규칙.
+alwaysApply: true
+---
+
+# 테스트자동화 도메인 규칙 (절대)
+
+제품: `docs/01.제품과완료기준/01.한문장약속.md`
+공통: `docs/01.제품과완료기준/02.공통컨텍스트.md`
+DoD: `docs/01.제품과완료기준/03.파일럿완료기준.md`
+색인: `docs/index.md`
+ADR: `docs/02.아키텍처/03.의사결정기록.md`
+
+---
+
+## 1. 핵심 난제 · 한 문장 약속
+
+```text
+의존관계 분석 → A→API→B 통합 시나리오 → agent-browser 실행 → 증적 → HITL
+```
+
+```text
+Frontend·Backend 정적 분석 → A 이벤트·API·B 바인딩 시나리오 →
+agent-browser 관통 실행 → DOM snapshot·스크린샷·Network·로그 증적 → HITL
+```
+
+이 경로에 가장 많은 설계·구현 집중을 둔다.
+Swagger식 API 파라미터 테스트만으로 끝내지 않는다.
+Backend + Frontend 화면 연계를 포함한다.
+통합의 FE 관측·검증은 **agent-browser MCP(DOM snapshot + 스크린샷)** 를 기본 체계로 둔다.
+([vercel-labs/agent-browser](https://github.com/vercel-labs/agent-browser))
+
+---
+
+## 2. 가치 사슬 · Console 여정
+
+```text
+가치 사슬:
+1) 시나리오 생성 (분석 · Graph · Scenario DSL)
+2) INPUT 추천 · 실행 · 추적 · 바인딩 · Evidence
+3) 건별/배치 · HITL 승인
+
+Console 여정 (Progress Type 2):
+프로젝트 → 저장소 → 시나리오생성 → 시나리오목록 → 일괄/개별 테스트
+```
+
+(선택) Design Spec · Excel/CSV는 저장소 연결 이후 **보조 Evidence**로 업로드한다.  
+통합 실행 시 2단의 재료에는 **DOM 관측 요약 + 단계별 스크린샷 artifact** 를 포함한다.
+
+---
+
+## 3. HITL
+
+```text
+AI : 초안, 유추, Plan 재료, 실행 관측 요약 (DOM·스크린샷 근거)
+사람: Pass/Fail 최종 확정, 배포·승인, 시나리오 채택
+```
+
+AI가 “테스트 성공 확정 / 배포 가능”을 단정하지 않는다.
+Progress Complete·기술 완료 ≠ 고객 승인.
+기울기·관찰·확인 요청만.
+스크린샷·DOM 일치만으로 Pass를 선언하지 않는다.
+
+---
+
+## 4. missing_data · 보조 Evidence · 신뢰도
+
+- 저장소·분석 artifact에 없는 의존·파라미터·경로를 추정으로 채우지 않는다
+- DOM에 해당 입력/결과 노드가 없으면 추정하지 말고 `missing_data`로 표시한다
+- Design Spec(PPT/이미지)·Excel/CSV는 **보조 Evidence** (D-006)
+  - hint/candidate/reviewRequired만. 코드 Graph·Contract join 전 확정 금지
+  - Vision/OCR만 ≤ 0.49 (`hint`). 엑셀 기대값은 승인 전 `reviewRequired`
+  - 계약: `docs/03.계약과예시/04.DesignSpec스키마.md`, `05.TestDataSheet스키마.md`
+- 신뢰도 0.70 미만 Edge는 `unresolved` (공통컨텍스트 §6)
+- 사람에게 확인을 요청한다
+
+---
+
+## 5. 단위 vs 통합
+
+| 종류 | 정의 | 검증 축 |
+|---|---|---|
+| 단위 | 단일 거래/서비스 단위 | script/rule · API/유닛 산출 |
+| 통합 | A→API→B 연속 흐름 | Graph/DSL 엣지 + **FE DOM/스크린샷(agent-browser MCP)** |
+
+통합 Plan의 **그래프/엣지 확정 수치·파싱**은 script/rule.
+LLM은 초안·설명·구조화 보조.
+
+### 5.1 통합 FE 검증 체계 (agent-browser MCP) — 강제
+
+```text
+Plan step (A→B …)
+ → agent-browser open (대상 FE URL)
+ → snapshot 으로 입력 컨트롤·ref 관측 (fill 전/후)
+ → fill / click / wait 수행
+ → snapshot 으로 후속 화면·결과 노드 관측
+ → screenshot 저장 (evidence artifact, annotate 권장)
+ → 관측 요약만 보고 (Pass/Fail 단정 금지)
+```
+
+필수 원칙:
+
+1. **입력값 검증** — expected INPUT과 DOM value / snapshot ref 상태를 대조한다. 없으면 `missing_data`.
+2. **후속 수행 결과 검증** — 다음 step 화면의 관측 가능 노드·텍스트만 근거로 삼는다.
+3. **스크린샷 의무** — 최소 “입력 직후”·“후속 결과 화면” 2장.
+4. **API-only 통합**이면 DOM 경로를 강제하지 않되, FE 연계 step이 있으면 agent-browser 경로를 탄다.
+5. **사용 전 사용자에게 문의**한다. 무단 파괴적 크롤 금지.
+6. Playwright MCP는 보완·레거시. FE DOM 검증 기본 경로가 아니다.
+7. **임의 sleep 금지** — snapshot/selector/URL/text/network 조건 대기.
+8. **DOM 직접 주입 금지** — fill/click/press 등 실제 사용자 이벤트만.
+
+상세: `docs/04.Phase실행바이블/09.브라우저실행.md`
+
+### 5.2 세션 선행조건 · 기대 결과 판정 (D-015) — 강제
+
+```text
+관측된 결함:
+로그인 없이 /logout 만 열어 실행 → 서버 거부(Allowlist methods) →
+로그아웃은 되지 않았는데 "Endpoint 접근"만으로 성공 플래그·증적이 남았다.
+```
+
+1. **인증 뒤 화면은 선행 로그인 없이 실행·생성하지 않는다.**
+ 시나리오에 `authRequired` · `sessionPolicy`
+ (`no_auth` | `login_then_reuse` | `reuse_existing_session` | `fresh_login_required`)를 둔다.
+ **로그아웃 시나리오는 예외 없이 선행 로그인 step을 포함한다.**
+2. 로그인 계정은 **연결 정보에 등록된 값**만 참조한다
+ (`environment.loginId` / `environment.loginSecret`). 값 생성·저장·로그 금지.
+3. 로그인 직후 **세션 생성 여부를 화면 관측으로 확인**하고(`blocking`), 후속 단계는 **같은 세션**에서 이어간다.
+ 쿠키·스토리지 조작으로 세션을 위조하지 않는다.
+4. **도달 ≠ 성공.** 화면·Endpoint 열림 / 요청 전송 / 스크린샷 존재 / 예외 없음만으로
+ 성공 상태를 만들지 않는다. 401·403·405·Allowlist·세션 미생성은 **실패 신호**다.
+5. Run 결과에 `verdict`(`expected_met`|`expected_not_met`|`undetermined`) · `verdictReason` ·
+ `criteriaResults[]` · `blockingIssues[]` · `coverageNote`(미검증 범위)를 남긴다.
+ 기대 기준이 없으면 `undetermined` + `missing_data`.
+6. 이 규칙은 **시스템 프롬프트·SKILL 계약**으로 강제한다 (코드 하드코딩 아님).
+ - `backend/app/prompts/scenario/session_precondition_system.md`
+ - `backend/app/prompts/run/verify_expected_result_system.md`
+ - `backend/app/skills/scenario_dsl/SKILL.md` · `backend/app/skills/browser_execute/SKILL.md`
+
+계약: `docs/03.계약과예시/08.세션선행조건과판정계약.md` · ADR D-015
+
+---
+
+## 6. 실행 추적 헤더
+
+```http
+X-Test-Run-ID: RUN-...
+X-Scenario-ID: ...
+X-Scenario-Version: ...
+X-Test-Case-ID: ...
+X-Input-Profile-ID: ...
+```
+
+---
+
+## 7. MCP · 화면 UI (강제 포함)
+
+| MCP | 역할 |
+|---|---|
+| **agent-browser** | 통합 FE **기본** — snapshot/ref · screenshot evidence |
+| Playwright MCP | 보완·레거시 — **사용 전 사용자 문의** |
+| Context7 | 라이브러리 문서 |
+| Figma MCP | UI 설계 대조. **Flow UI** D-008 · **Progress UI** D-009 |
+
+### Flow UI (D-008) — Phase 05
+
+- Kit: `qpZeClozlSVQd6j8Od8P9x` · node `0:1` / Example `1:319`
+- 문서: `docs/04.Phase실행바이블/05.InteractionGraph.md`
+- 임의 flowchart 스킨으로 대체 금지
+
+### Progress UI (D-009) — 여정·시나리오·실행
+
+- Kit: `HLWN6f7fxSVMIxoZtW6SIc` · node `799:98620`
+- 문서: `docs/02.아키텍처/04.진행상태UI.md`
+- Type 2 스텝퍼(여정) · Type 1(목록) · Type 4(건별 스텝) · Type 1/5(배치)
+- Complete ≠ HITL Pass
+
+공통:
+
+- MCP 사용 전 사용자에게 사용 여부를 문의한다
+- 스크린샷·snapshot은 runtime artifact로 저장한다
+- AI는 관측 재료만 제공하고 Pass/Fail·배포는 사람이 한다
+
+---
+
+## 8. 저장소 · 보안
+
+- 파괴적 git(force push, hard reset 등) 자동 실행 금지
+- 대상 BE/FE 실기동은 단계적 (1차에 전 레포 E2E 일괄 완성 금지)
+- VCS 1차: GitHub URL + Local Path (SVN 정식 수집기 제외, D-007)
+- Secret·Password·Token·Cookie·Authorization Header 미저장
+- 실제 고객 PII 대신 합성·마스킹 데이터
+- 외부 LLM API 기본 금지 · 로컬 endpoint · Pilot/Sandbox만
+- destructive action 기본 차단
+
+---
+
+## 9. 답변·보고
+
+`01-ai-answer-format.mdc` 준수.
+내부 grounded 경로명·MCP 도구 원명을 사용자 문구에 장황히 노출하지 않는다.
+FE 검증 보고 시에는 “화면 DOM·스크린샷 기준으로 관측했습니다” 톤을 쓴다.

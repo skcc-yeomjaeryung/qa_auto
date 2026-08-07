@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qa-auto.local/schemas/plan.schema.json",
+  "title": "QA_AUTO Plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "planId", "workflowId", "steps"],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "enum": ["plan/v1", "plan/v2"]
+    },
+    "planId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "workflowId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["stepId", "skill", "tool"],
+        "properties": {
+          "stepId": { "type": "string", "minLength": 1 },
+          "agent": { "type": "string" },
+          "skill": { "type": "string", "minLength": 1 },
+          "tool": { "type": "string", "minLength": 1 },
+          "dependsOn": {
+            "type": "array",
+            "items": { "type": "string" },
+            "default": []
+          },
+          "inputs": {
+            "type": "object",
+            "default": {}
+          },
+          "requiredCapability": {
+            "type": ["string", "null"]
+          },
+          "selectionReason": {
+            "type": ["string", "null"]
+          },
+          "modelDecision": {
+            "type": ["object", "null"]
+          }
+        }
+      }
+    }
+  }
+}

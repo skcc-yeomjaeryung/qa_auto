@@ -1,0 +1,39 @@
+workflow_id: wf_run_report
+name: Run Evidence Report Generation
+version: "1.1.0"
+description: >
+  실행 이력·시나리오·기술 검증·Evidence Package를 고정 Structured Output으로 검증하고
+  HITL 담당자가 인쇄·PDF에서도 검토할 수 있는 시각 우선 HTML/JSON 리포트를 생성한다.
+  원시 로그를 본문에 펼치거나 새로운 판정·근거를 만들지 않는다.
+status: active
+owner: qa_auto_platform
+workflow_type: report_generation
+intent:
+  primary: generate_run_review_report
+  aliases:
+    - run_report
+    - hitl_evidence_report
+hitl:
+  required: true
+  ai_role: organize_observed_evidence
+  human_role: final_pass_fail_and_approval
+required_capabilities:
+  - capability_id: QA.RUN.REPORT_GENERATE
+logical_steps:
+  - step_id: step_01
+    name: validate_and_render_run_report
+    required_capability: QA.RUN.REPORT_GENERATE
+    description: 실행 원본을 run-report/v1 계약으로 검증하고 HTML·JSON을 렌더링한다.
+required_agents:
+  - platform_runner
+inputs:
+  - reportSource
+  - artifactPath
+  - htmlPath
+outputs:
+  - run_report_result
+execution_policy:
+  execution_pattern: plan_execute_review_reduce
+  prohibit_new_judgement: true
+  missing_data_policy: explicit
+  final_decision: human_only

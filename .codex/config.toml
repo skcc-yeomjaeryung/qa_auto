@@ -1,0 +1,14 @@
+# Project-scoped MCP servers converted from .cursor/mcp.json.
+# Codex Desktop, CLI, and IDE integrations share this configuration for this trusted project.
+
+[mcp_servers.next-devtools]
+command = "npx"
+args = ["-y", "next-devtools-mcp@latest"]
+startup_timeout_sec = 30
+tool_timeout_sec = 60
+
+[mcp_servers.agent-browser]
+command = "agent-browser"
+args = ["mcp", "--tools", "core,network,react"]
+startup_timeout_sec = 20
+tool_timeout_sec = 120

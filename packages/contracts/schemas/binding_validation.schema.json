@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qa-auto.local/schemas/binding_validation.schema.json",
+  "title": "BindingValidationResult",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["runId", "technicalStatus", "assertions", "businessReviewRequired", "createdAt"],
+  "properties": {
+    "runId": { "type": "string" },
+    "scenarioId": { "type": "string" },
+    "contractId": { "type": ["string", "null"] },
+    "technicalStatus": {
+      "enum": ["TECHNICALLY_MATCHED", "TECHNICAL_MISMATCH", "PARTIAL", "BLOCKED"]
+    },
+    "businessReviewRequired": { "type": "boolean" },
+    "assertions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/assertion" }
+    },
+    "missingData": { "type": "array", "items": { "type": "string" } },
+    "createdAt": { "type": "string" },
+    "artifactPath": { "type": ["string", "null"] }
+  },
+  "$defs": {
+    "assertion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assertionId", "field", "source", "target", "result",
+        "businessReviewRequired", "hard"
+      ],
+      "properties": {
+        "assertionId": { "type": "string" },
+        "field": { "type": "string" },
+        "source": { "type": "string" },
+        "target": { "type": "string" },
+        "aInput": {},
+        "frontendRequest": {},
+        "backendRequest": {},
+        "backendResponse": {},
+        "uiValue": {},
+        "expected": {},
+        "actual": {},
+        "normalizedExpected": {},
+        "normalizedActual": {},
+        "normalizers": { "type": "array", "items": { "type": "string" } },
+        "result": {
+          "enum": ["MATCH", "MISMATCH", "MISSING_DATA", "REVIEW_REQUIRED"]
+        },
+        "businessReviewRequired": { "type": "boolean" },
+        "hard": { "type": "boolean" },
+        "masked": { "type": "boolean" },
+        "evidence": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "missingData": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

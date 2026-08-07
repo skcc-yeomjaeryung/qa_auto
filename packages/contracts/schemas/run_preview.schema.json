@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qa-auto.local/schemas/run_preview.schema.json",
+  "title": "RunPreview",
+  "description": "Phase 13 건별 실행 전 확인 요약. Pass/Fail·승인 확정은 포함하지 않는다 (HITL).",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "scenarioId",
+    "scenarioVersion",
+    "aScreen",
+    "bScreen",
+    "fields",
+    "plannedSteps",
+    "destructive",
+    "missingData"
+  ],
+  "properties": {
+    "scenarioId": { "type": "string" },
+    "scenarioName": { "type": "string" },
+    "scenarioVersion": { "type": "string" },
+    "scenarioStatus": { "type": "string" },
+    "projectId": { "type": ["string", "null"] },
+    "serviceId": { "type": ["string", "null"] },
+    "aScreen": { "$ref": "#/$defs/screen" },
+    "bScreen": { "$ref": "#/$defs/screen" },
+    "expectedApis": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["method", "path"],
+        "properties": {
+          "stepId": { "type": ["string", "null"] },
+          "method": { "type": "string" },
+          "path": { "type": "string" }
+        }
+      }
+    },
+    "fields": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/field" }
+    },
+    "reviewFieldCount": { "type": "integer", "minimum": 0 },
+    "inferredFieldCount": { "type": "integer", "minimum": 0 },
+    "destructive": { "type": "boolean" },
+    "destructiveReasons": { "type": "array", "items": { "type": "string" } },
+    "plannedSteps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["stepId", "action", "stage"],
+        "properties": {
+          "stepId": { "type": "string" },
+          "action": { "type": "string" },
+          "stage": { "type": "string", "enum": ["a_input", "request", "b_ui"] },
+          "target": { "type": ["string", "null"] },
+          "description": { "type": "string" }
+        }
+      }
+    },
+    "recommendationId": { "type": ["string", "null"] },
+    "inputProfileId": { "type": ["string", "null"] },
+    "inputProfileVersion": { "type": ["string", "null"] },
+    "inputProfileStatus": { "type": ["string", "null"] },
+    "commitRefs": { "type": "object", "additionalProperties": { "type": "string" } },
+    "environmentId": { "type": ["string", "null"] },
+    "environmentName": { "type": ["string", "null"] },
+    "baseUrl": { "type": ["string", "null"] },
+    "previousRun": {
+      "type": ["object", "null"],
+      "additionalProperties": true,
+      "properties": {
+        "runId": { "type": "string" },
+        "status": { "type": "string" },
+        "inputs": { "type": "object", "additionalProperties": true },
+        "outcomeKind": { "type": ["string", "null"] },
+        "createdAt": { "type": ["string", "null"] }
+      }
+    },
+    "unresolved": { "type": "array", "items": { "type": "object" } },
+    "missingData": { "type": "array", "items": { "type": "string" } },
+    "generatedAt": { "type": ["string", "null"] }
+  },
+  "$defs": {
+    "screen": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["screen"],
+      "properties": {
+        "screen": { "type": "string" },
+        "route": { "type": ["string", "null"] },
+        "routePattern": { "type": ["string", "null"] }
+      }
+    },
+    "field": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["field", "confidence"],
+      "properties": {
+        "field": { "type": "string" },
+        "value": {},
+        "displayValue": { "type": ["string", "null"] },
+        "required": { "type": "boolean" },
+        "category": { "type": ["string", "null"] },
+        "expectedPath": { "type": ["string", "null"] },
+        "locator": { "type": ["string", "null"] },
+        "source": { "type": ["string", "null"] },
+        "rationale": { "type": ["string", "null"] },
+        "confidence": {
+          "type": "string",
+          "enum": ["confirmed", "inferred", "review_required", "unresolved"]
+        },
+        "synthesized": { "type": "boolean" },
+        "masked": { "type": "boolean" },
+        "editable": { "type": "boolean" },
+        "candidates": { "type": "array", "items": { "type": "object" } }
+      }
+    }
+  }
+}

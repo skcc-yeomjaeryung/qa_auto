@@ -1,0 +1,6 @@
+{
+  "projectId": "PRJ-example",
+  "projectContextManifestPath": ".data/project-context/PRJ-example/manifest.json",
+  "scenarioContextQuery": "입금 화면 서버 응답 잔액 반영"
+}
+

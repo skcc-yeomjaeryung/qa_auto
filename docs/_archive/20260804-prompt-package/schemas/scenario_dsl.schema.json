@@ -1,0 +1,249 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.example/schemas/scenario_dsl.schema.json",
+  "title": "ScenarioDSL",
+  "type": "object",
+  "required": [
+    "scenarioId",
+    "name",
+    "version",
+    "status",
+    "sourceRefs",
+    "source",
+    "inputs",
+    "steps",
+    "assertions",
+    "evidencePolicy",
+    "hitlPolicy"
+  ],
+  "properties": {
+    "scenarioId": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "DRAFT",
+        "READY_FOR_INPUT",
+        "EXECUTABLE",
+        "DEPRECATED"
+      ]
+    },
+    "sourceRefs": {
+      "type": "object",
+      "required": [
+        "graphId",
+        "graphVersion",
+        "commitRefs"
+      ],
+      "properties": {
+        "graphId": {
+          "type": "string"
+        },
+        "graphVersion": {
+          "type": "string"
+        },
+        "commitRefs": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "screen",
+        "route"
+      ],
+      "properties": {
+        "screen": {
+          "type": "string"
+        },
+        "route": {
+          "type": "string"
+        }
+      }
+    },
+    "destination": {
+      "type": "object",
+      "properties": {
+        "screen": {
+          "type": "string"
+        },
+        "routePattern": {
+          "type": "string"
+        }
+      }
+    },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "type",
+          "required",
+          "locator",
+          "events"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "semanticType": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "constraints": {
+            "type": "object"
+          },
+          "locator": {
+            "type": "object"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "reviewRequired": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "action"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "action": {
+            "enum": [
+              "navigate",
+              "fill",
+              "blur",
+              "press",
+              "select",
+              "check",
+              "click",
+              "submit",
+              "wait_for_response",
+              "verify_response",
+              "verify_navigation",
+              "verify_binding"
+            ]
+          },
+          "target": {
+            "type": "object"
+          },
+          "valueFrom": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "request": {
+            "type": "object"
+          },
+          "expect": {
+            "type": "object"
+          },
+          "timeoutMs": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "evidenceRefs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "assertions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "severity"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "hard",
+              "soft",
+              "business-review"
+            ]
+          },
+          "expectedFrom": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "actualFrom": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "normalize": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "reviewRequired": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "evidencePolicy": {
+      "type": "object"
+    },
+    "hitlPolicy": {
+      "type": "object"
+    },
+    "unresolved": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    }
+  }
+}

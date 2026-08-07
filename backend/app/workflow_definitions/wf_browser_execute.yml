@@ -1,0 +1,41 @@
+workflow_id: wf_browser_execute
+name: Browser Execute A→B
+version: "1.0.0"
+description: >
+  Scenario DSL을 agent-browser로 실행하고 snapshot·screenshot 증적을 남긴다.
+  Pass/Fail은 HITL. 사용자 consent 필수.
+status: active
+owner: qa_auto_platform
+workflow_type: execution
+intent:
+  primary: browser_execute_scenario
+  aliases:
+    - run_browser_scenario
+    - agent_browser_a_to_b
+hitl:
+  required: true
+  ai_role: observe_and_collect_evidence
+  human_role: pass_fail_and_approval
+intents:
+  - intent_id: browser_execute
+    description: 건별 FE 관통 실행
+required_capabilities:
+  - capability_id: QA.CODE.BROWSER_EXECUTE
+logical_steps:
+  - step_id: step_01
+    name: execute_browser_run
+    required_capability: QA.CODE.BROWSER_EXECUTE
+    description: open→snapshot→fill→click→screenshot
+required_agents:
+  - platform_runner
+inputs:
+  - scenario
+  - inputs
+  - consent
+  - baseUrl
+outputs:
+  - browser_run_result
+execution_policy:
+  execution_pattern: plan_execute_review_reduce
+  browser_runner: agent-browser
+  require_consent: true

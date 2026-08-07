@@ -1,0 +1,156 @@
+# Phase 04 — Frontend API 호출과 Backend Endpoint 자동 매핑
+
+## 이 프롬프트의 역할
+
+당신은 대형 SI 프로젝트용 AI Code-to-E2E 관통 테스트 플랫폼의 수석 개발자다.  
+프로젝트 루트에서 먼저 다음 문서를 읽고 현재 코드 상태를 점검하라.
+
+- `AGENTS.md`
+- `README.md`
+- `index.md`
+- `00_common_context.md`
+- `00_pilot_definition_of_done.md`
+- 관련 JSON Schema와 이전 Phase 완료 보고서
+
+계획 문서만 작성하지 말고, **실제 구현·테스트·문서화·완료 보고까지 한 번의 작업으로 수행**하라.  
+모호한 부분은 기존 코드와 공통 문서를 근거로 합리적인 기본값을 채택하고, 구현을 중단하는 질문으로 돌리지 말라.
+
+## Phase 목표
+
+
+Frontend API Call과 Backend Endpoint를 결정론적 근거로 연결하고, Request/Response 계약 불일치와 미매핑 항목을 표시한다.
+
+
+## 선행조건
+
+
+- Phase 02 Frontend Analysis 완료
+- Phase 03 Backend Analysis 완료
+- 동일 Project의 RepositorySet과 Commit이 확정됨
+
+
+## 구현 범위
+
+
+- URL 정규화
+- HTTP Method/Path 매칭
+- baseURL, proxy, environment path 처리
+- Request/Response field 매핑
+- OpenAPI가 있으면 우선 활용
+- Confidence와 불일치 탐지
+
+
+## 상세 구현 요구사항
+
+
+1. 매칭 우선순위:
+   1) OpenAPI operationId 또는 명시적 client binding
+   2) HTTP Method + normalized path
+   3) path parameter 구조
+   4) request/response type과 field 유사도
+   5) 기존 테스트 Evidence
+   6) LLM은 미해결 후보 설명에만 사용
+2. `/api/customers/${id}`와 `/api/customers/{id}`를 동일 패턴으로 정규화한다.
+3. Next.js rewrite/proxy, Axios baseURL, 환경변수 prefix를 해석한다.
+4. 한 Frontend Call에 여러 Backend 후보가 있으면 확정하지 말고 후보를 순위화한다.
+5. Frontend와 Backend validation 차이를 필드 단위로 보여준다.
+6. Request field rename, optional/required 불일치, enum 차이, response missing field를 탐지한다.
+7. 매핑 결과는 이후 Graph가 참조할 안정적 ID를 가진다.
+8. 수동 확정/수정 기능을 제공하고 Audit Trail을 남긴다.
+
+
+## API·계약·데이터
+
+
+매핑 예시:
+
+```json
+{
+  "mappingId": "MAP-001",
+  "frontendCallId": "FE-CALL-001",
+  "backendEndpointId": "BE-ENDPOINT-001",
+  "method": "POST",
+  "normalizedPath": "/api/customers/search",
+  "confidence": 1.0,
+  "requestFieldMappings": [],
+  "responseFieldMappings": [],
+  "mismatches": [],
+  "status": "confirmed"
+}
+```
+
+필수 API:
+- `POST /api/analyses/{id}/api-mappings`
+- `GET /api/analyses/{id}/api-mappings`
+- `PATCH /api/api-mappings/{id}`
+
+
+## UI 요구사항
+
+
+- Frontend Call과 Backend Endpoint 양측 목록
+- 자동 매핑 결과
+- Confidence
+- Request/Response Schema 비교
+- 불일치 경고
+- 미매핑/다중 후보 수동 확정
+
+
+## 필수 테스트
+
+
+- 동일 Method/Path
+- baseURL 포함
+- 동적 path parameter
+- query parameter
+- frontend/backend required 불일치
+- enum 불일치
+- 여러 endpoint 후보
+- 미매핑
+- 수동 override 감사로그
+
+
+## 완료 기준
+
+
+- [ ] 고객조회 Frontend 호출이 Backend Endpoint와 매핑된다.
+- [ ] `customerId` 요청 필드가 연결된다.
+- [ ] `customerName`, `riskLevel`, `status` 응답 필드가 연결된다.
+- [ ] Validation 불일치를 필드별 표시한다.
+- [ ] 다중 후보는 자동 확정하지 않는다.
+- [ ] 매핑 근거와 Confidence를 확인할 수 있다.
+
+
+## 제외 범위
+
+
+- 실제 API 호출 실행
+- Graph 생성
+- DB Schema 매핑
+
+
+## 산출물
+
+
+- API Mapping Engine
+- 불일치 규칙
+- 매핑 API/UI
+- 수동 확정 Audit
+- 테스트 Fixture
+
+
+## 작업 종료 보고
+
+`templates/phase_completion_report.md` 형식으로  
+`docs/20260804/phase-reports/PHASE-04.md`를 작성하라.
+
+보고서에는 다음을 반드시 포함한다.
+
+- 구현 요약
+- 변경 파일
+- 실행한 명령
+- 테스트 결과
+- Acceptance Criteria 충족표
+- 알려진 제약
+- 다음 Phase 전달사항
+- `AGENTS.md` 변경 여부

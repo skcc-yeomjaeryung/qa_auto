@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qa-auto.local/schemas/run.schema.json",
+  "title": "BrowserRun",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["runId", "scenarioId", "status"],
+  "properties": {
+    "runId": { "type": "string" },
+    "scenarioId": { "type": "string" },
+    "projectId": { "type": ["string", "null"] },
+    "serviceId": { "type": ["string", "null"] },
+    "status": {
+      "type": "string",
+      "enum": [
+        "QUEUED",
+        "PREPARING",
+        "RUNNING",
+        "AUTO_PASSED",
+        "AUTO_FAILED",
+        "CANCELLED",
+        "WAITING_FOR_REVIEW"
+      ]
+    },
+    "browserRunner": { "type": "string" },
+    "consent": { "type": "boolean" },
+    "baseUrl": { "type": ["string", "null"] },
+    "inputs": { "type": "object", "additionalProperties": true },
+    "evidenceDir": { "type": ["string", "null"] },
+    "screenshotCount": { "type": "integer" },
+    "snapshotCount": { "type": "integer" },
+    "missingData": { "type": "array", "items": { "type": "string" } },
+    "observationSummary": { "type": ["string", "null"] },
+    "hitlRequired": { "type": "boolean" },
+    "createdAt": { "type": ["string", "null"] },
+    "updatedAt": { "type": ["string", "null"] },
+    "testCaseId": { "type": ["string", "null"] },
+    "inputProfileId": { "type": ["string", "null"] },
+    "backendTraceStatus": { "type": ["string", "null"] },
+    "backendTraceConstraint": { "type": ["string", "null"] },
+    "partialEvidence": { "type": "boolean" },
+    "mode": { "type": "string", "enum": ["interactive", "batch"] },
+    "scenarioVersion": { "type": ["string", "null"] },
+    "inputProfileVersion": { "type": ["string", "null"] },
+    "overrides": { "type": "object", "additionalProperties": true },
+    "reusedFromRunId": { "type": ["string", "null"] },
+    "plannedStepCount": { "type": "integer", "minimum": 0 },
+    "progressPercent": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "currentStepId": { "type": ["string", "null"] },
+    "failedStepId": { "type": ["string", "null"] },
+    "steps": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/runStep" }
+    }
+  },
+  "$defs": {
+    "runStep": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["stepId", "action", "status"],
+      "properties": {
+        "stepId": { "type": "string" },
+        "action": { "type": "string" },
+        "mcpTool": { "type": ["string", "null"] },
+        "refOrLocator": { "type": ["string", "null"] },
+        "status": { "type": "string" },
+        "startedAt": { "type": ["string", "null"] },
+        "endedAt": { "type": ["string", "null"] },
+        "snapshotPath": { "type": ["string", "null"] },
+        "screenshotPath": { "type": ["string", "null"] },
+        "networkRefs": { "type": "array", "items": { "type": "string" } },
+        "observationSummary": { "type": ["string", "null"] },
+        "missingData": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

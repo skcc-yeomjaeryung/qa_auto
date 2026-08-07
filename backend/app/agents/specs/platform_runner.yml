@@ -1,0 +1,21 @@
+agent_id: platform_runner
+name: platform_runner
+version: 1.0.0
+description: Named Execution Boundary for platform utility Skills
+allowed_skills:
+  - health_ping
+  - frontend_analyze
+  - backend_spring_analyze
+  - api_map
+  - interaction_graph
+  - scenario_dsl
+  - scenario_narrate
+  - component_contract
+  - input_recommend
+  - browser_execute
+  - project_context_discover
+  - run_report
+prohibited_actions:
+  - final_pass_fail_decision
+  - invent_hub_assets
+  - autonomous_reasoning_beyond_plan

@@ -1,0 +1,70 @@
+# =============================================================================
+# Few-shot 참조 템플릿: Workflow Definition
+# -----------------------------------------------------------------------------
+# 실제 로드 대상이 아니라 구조/수준의 기준이다.
+# Graph 관련 필드(그래프, 노드, 엣지)는 여기에 절대 넣지 않는다.
+# =============================================================================
+
+workflow_id: test_scenario_generation_workflow
+version: 1.0.0
+name: 테스트 시나리오 생성 Workflow
+description: >
+  동기화된 저장소 스냅샷을 분석하여 단위·통합 테스트 시나리오 초안을 만든다.
+  AI는 초안·Plan 재료를 제공하고, 최종 Pass/Fail·배포는 사람이 결정한다.
+
+workflow_type: business_analysis
+domain: test_automation
+
+decision_boundary:
+  ai_role: scenario_draft_and_execution_support
+  human_role: final_pass_fail_and_approval
+  prohibited_ai_actions:
+    - auto_deploy
+    - final_pass_fail_decision
+
+trigger_intents:
+  - intent_id: generate_test_scenarios
+    aliases:
+      - 테스트 시나리오 생성
+      - 단위 통합 시나리오 만들어줘
+
+business_goal:
+  - 저장소 코드 기반 단위 테스트 시나리오 초안 생성
+  - 의존관계 A→B→C 통합 테스트 Plan 초안 생성
+
+input_contract:
+  required:
+    repo_ref: string
+  optional:
+    focus_paths: string[]
+    notes: string
+
+# Workflow는 Skill/Agent ID를 직접 고정하지 않는다.
+required_capabilities:
+  - capability_id: TEST.CODE.ANALYZE
+  - capability_id: TEST.SCENARIO.UNIT_GENERATE
+  - capability_id: TEST.SCENARIO.INTEGRATION_PLAN
+
+logical_steps:
+  - step_id: step_01
+    name: 코드·의존 신호 분석
+    required_capability: TEST.CODE.ANALYZE
+  - step_id: step_02
+    name: 단위 시나리오 초안
+    required_capability: TEST.SCENARIO.UNIT_GENERATE
+    depends_on: [step_01]
+  - step_id: step_03
+    name: 통합 테스트 Plan A→B→C
+    required_capability: TEST.SCENARIO.INTEGRATION_PLAN
+    depends_on: [step_01]
+
+execution_policy:
+  execution_pattern: plan_execute_review_reduce
+  require_reviewer: true
+  require_reducer: true
+  allow_parallel_steps: false
+
+output_contract:
+  required:
+    - unit_scenarios
+    - integration_plan

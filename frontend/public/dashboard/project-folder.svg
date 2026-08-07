@@ -1,0 +1,30 @@
+<svg width="220" height="154" viewBox="0 0 220 154" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="folderBody" x1="28" y1="47" x2="183" y2="145" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#B8B3FF"/>
+      <stop offset="1" stop-color="#776BF4"/>
+    </linearGradient>
+    <linearGradient id="folderPaper" x1="101" y1="38" x2="160" y2="123" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#E7E5FF"/>
+    </linearGradient>
+    <filter id="shadow" x="13" y="23" width="194" height="130" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="8" stdDeviation="9" flood-color="#4D43B9" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+  <g filter="url(#shadow)">
+    <path d="M28 48C28 40.268 34.268 34 42 34H85.4C90.23 34 94.72 36.49 97.28 40.58L104.42 52H178C185.732 52 192 58.268 192 66V124C192 131.732 185.732 138 178 138H42C34.268 138 28 131.732 28 124V48Z" fill="url(#folderBody)"/>
+    <path d="M43 58H177C181.418 58 185 61.582 185 66V118C185 122.418 181.418 126 177 126H43C38.582 126 35 122.418 35 118V66C35 61.582 38.582 58 43 58Z" fill="#C9C5FF"/>
+    <path d="M82 50L149 42C153.386 41.476 157.367 44.606 157.891 48.992L166.021 116.557C166.545 120.943 163.415 124.924 159.029 125.448L92.029 133.448C87.643 133.972 83.662 130.842 83.138 126.456L75.008 58.891C74.484 54.505 77.614 50.524 82 50Z" fill="url(#folderPaper)"/>
+    <rect x="92" y="65" width="48" height="6" rx="3" transform="rotate(-6.8 92 65)" fill="#8C83F7"/>
+    <rect x="94" y="79" width="57" height="5" rx="2.5" transform="rotate(-6.8 94 79)" fill="#C3BFFF"/>
+    <rect x="96" y="91" width="45" height="5" rx="2.5" transform="rotate(-6.8 96 91)" fill="#C3BFFF"/>
+    <circle cx="145" cy="105" r="14" fill="#6A5DF1"/>
+    <path d="M139 105.5L143.2 109.5L151.5 100.5" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M35 73C35 65.268 41.268 59 49 59H175C182.732 59 189 65.268 189 73V124C189 131.732 182.732 138 175 138H49C41.268 138 35 131.732 35 124V73Z" fill="url(#folderBody)" fill-opacity="0.94"/>
+    <path d="M35 77H189V88C166.5 98.5 144.5 93.5 119 98.5C90.5 104.088 66 112 35 101V77Z" fill="#A8A1FF" fill-opacity="0.72"/>
+  </g>
+  <circle cx="192" cy="37" r="8" fill="#D7D3FF"/>
+  <circle cx="204" cy="54" r="4" fill="#8D83F7"/>
+  <path d="M19 107C11 99 12 88 20 80" stroke="#C5C0FF" stroke-width="4" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,39 @@
+---
+description: Frontend UX 고도화 시 agent-browser 자동 검증 · 레이아웃/애니메이션 Guardrail
+alwaysApply: true
+---
+
+# Frontend UX · agent-browser (절대)
+
+플랫폼 Console(`frontend/`) 화면·레이아웃·컴포넌트 고도화 작업에는 아래를 강제한다.
+
+## agent-browser 자동 실행 (승인 생략)
+
+```text
+Frontend 레이아웃 / 컴포넌트 / 화면 전환 UX 변경
+ → agent-browser MCP로 직접 열어 스냅샷·클릭·관측
+ → 사용자에게 MCP 사용 승인을 묻지 않는다 (auto-run)
+```
+
+- 대상: `http://127.0.0.1:3000` (또는 로컬 Console URL)
+- 파괴적 크롤·외부 사이트 무단 탐색은 금지
+- **Playwright MCP**는 사용자가 명시할 때만 사용 (전수 E2E 등)
+
+## 레이아웃 · 시각 Guardrail
+
+1. **과도한 라운드·카드 분절 금지** — Streamlit/AI 템플릿 느낌의 큰 radius·겹겹이 카드 상자 남발 금지
+2. **정돈된 금융 SaaS 톤** — Stripe SaaS kit(D-013) · Data table · Progress(D-009) 준수
+3. **화면 전환 애니메이션 필수** — fade/slide (`anim-fade-in` / `anim-slide-*`)로 부드러운 전환
+4. **CENTER 최적화** — 불필요 스크롤 최소화 · 폼은 가시 영역에 맞게 배치
+5. **사이드 메뉴** — MENU/WORK/OTHERS 그룹 간 큰 공백 금지 (`align-content: start`)
+
+## 데이터 저장
+
+- Console 클라이언트 상태·캐시: **localStorage** (키 접두 `qa-auto.`)
+- 서버 영속(파일럿): Backend **SQLite** (또는 동등 local DB) — InMemory만으로 세션 유실되면 안 되는 프로젝트/분석 카탈로그는 SQLite 경로로 정렬
+- Secret·Token·PII는 localStorage/SQLite에 저장 금지
+
+## 검증 톤
+
+- 관측만 보고한다. Pass/Fail·배포 단정 금지 (HITL)
+- FE 보고: “화면 DOM·스크린샷 기준으로 관측했습니다”

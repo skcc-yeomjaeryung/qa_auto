@@ -1,0 +1,68 @@
+# =============================================================================
+# Interaction Graph Workflow
+# -----------------------------------------------------------------------------
+# 교보재: docs/05.템플릿/few-shot/template_workflow.yml
+# =============================================================================
+
+workflow_id: wf_interaction_graph
+version: 1.0.0
+name: A→API→B Interaction Graph Workflow
+description: >
+  FE/BE 분석과 API 매핑을 결합해 Interaction Graph를 조립한다.
+  Flow UI는 Figma User Flow Kit(D-008)에 바인딩한다.
+  최종 Pass/Fail·배포는 사람이 결정한다.
+
+workflow_type: code_analysis
+domain: test_automation
+owner: qa_auto_platform
+status: active
+
+decision_boundary:
+  ai_role: graph_draft_and_lineage_observation
+  human_role: final_confirm_pass_fail_and_approval
+  prohibited_ai_actions:
+    - auto_deploy
+    - final_pass_fail_decision
+    - invent_hub_assets
+    - invent_endpoints_without_evidence
+
+trigger_intents:
+  - intent_id: build_interaction_graph
+    aliases:
+      - Interaction Graph
+      - A to B flow
+      - 상호작용 그래프
+
+business_goal:
+  - A 화면에서 B 화면까지 관통 흐름을 Evidence와 함께 표현한다
+  - 정상·검증실패·404 분기를 구분한다
+
+input_contract:
+  required:
+    frontendAnalysisPath: string
+    backendAnalysisPath: string
+    apiMappingPath: string
+  optional:
+    projectId: string
+    repositorySetId: string
+    graphId: string
+    artifactPath: string
+
+required_capabilities:
+  - capability_id: QA.CODE.INTERACTION_GRAPH
+
+logical_steps:
+  - step_id: step_01
+    name: Interaction Graph 조립
+    required_capability: QA.CODE.INTERACTION_GRAPH
+    depends_on: []
+
+execution_policy:
+  execution_pattern: plan_execute_review_reduce
+  require_reviewer: true
+  require_reducer: true
+  allow_parallel_steps: false
+
+output_contract:
+  required:
+    - interaction_graph_result

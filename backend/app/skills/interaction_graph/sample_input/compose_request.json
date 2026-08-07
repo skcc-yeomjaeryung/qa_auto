@@ -1,0 +1,8 @@
+{
+  "projectId": "PRJ-sample",
+  "repositorySetId": "RS-sample",
+  "frontendAnalysisPath": "artifacts/analysis/AN-FE-5305d8bde832/frontend.json",
+  "backendAnalysisPath": "artifacts/analysis/AN-BE-5115c351b091/backend.json",
+  "apiMappingPath": "artifacts/analysis/MAPSET-sample/api-mapping.json",
+  "artifactPath": "artifacts/analysis/IG-sample/interaction-graph.json"
+}

@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.example/schemas/execution_environment.schema.json",
+  "title": "ExecutionEnvironment",
+  "type": "object",
+  "required": ["id", "projectId", "name", "frontendBaseUrl", "status"],
+  "properties": {
+    "id": { "type": "string" },
+    "projectId": { "type": "string" },
+    "name": { "type": "string", "minLength": 1 },
+    "frontendBaseUrl": { "type": "string", "minLength": 1 },
+    "backendBaseUrl": { "type": ["string", "null"] },
+    "healthCheckPath": { "type": "string" },
+    "apiBasePath": { "type": ["string", "null"] },
+    "https": { "type": "boolean" },
+    "verifyTls": { "type": "boolean" },
+    "proxy": { "type": ["string", "null"] },
+    "accessNotes": { "type": ["string", "null"] },
+    "testAccountRefKey": { "type": ["string", "null"] },
+    "browser": {
+      "type": "string",
+      "enum": ["chrome", "chromium", "edge"]
+    },
+    "loginId": { "type": ["string", "null"] },
+    "hasLoginSecret": { "type": "boolean" },
+    "hostAllowlisted": { "type": "boolean" },
+    "lastHealthStatus": {
+      "type": "string",
+      "enum": ["unknown", "up", "down", "error"]
+    },
+    "lastHealthAt": { "type": ["string", "null"] },
+    "lastHealthDetail": {
+      "type": ["object", "null"],
+      "additionalProperties": true
+    },
+    "status": {
+      "type": "string",
+      "enum": ["active", "disabled", "draft"]
+    },
+    "version": { "type": "integer", "minimum": 1 },
+    "createdAt": { "type": "string" },
+    "updatedAt": { "type": "string" }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,35 @@
+{
+  "runId": "RUN-sample",
+  "consent": true,
+  "baseUrl": "http://127.0.0.1:5173",
+  "inputs": { "customerId": "CUS-1001" },
+  "scenario": {
+    "scenarioId": "SCN-sample",
+    "version": "1",
+    "source": { "route": "/customers/search" },
+    "destination": { "routePattern": "/customers/" },
+    "steps": [
+      {
+        "id": "S1",
+        "action": "navigate",
+        "target": { "route": "/customers/search" }
+      },
+      {
+        "id": "S2",
+        "action": "fill",
+        "target": { "strategy": "testId", "value": "customer-id-input" },
+        "valueFrom": "inputs.customerId"
+      },
+      {
+        "id": "S3",
+        "action": "click",
+        "target": { "strategy": "testId", "value": "customer-search-submit" }
+      },
+      {
+        "id": "S4",
+        "action": "verify_navigation",
+        "expect": { "routePattern": "/customers/" }
+      }
+    ]
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "catalogId": "bp-customer-search",
+  "serviceId": "customer-search",
+  "version": "1.0.0",
+  "synthetic": true,
+  "entries": [
+    {
+      "entryId": "bp-happy-cus-1001",
+      "field": "customerId",
+      "value": "CUS-1001",
+      "category": "happy_path",
+      "expectedPath": "detail_success",
+      "priority": 50,
+      "mask": false,
+      "rationale": "Best Practice Catalog happy path synthetic customer"
+    },
+    {
+      "entryId": "bp-business-restricted",
+      "field": "customerId",
+      "value": "CUS-2002",
+      "category": "business_state",
+      "expectedPath": "detail_restricted",
+      "priority": 50,
+      "mask": false,
+      "rationale": "Best Practice Catalog restricted/review business state"
+    },
+    {
+      "entryId": "bp-not-found",
+      "field": "customerId",
+      "value": "CUS-9999",
+      "category": "not_found",
+      "expectedPath": "not_found_404",
+      "priority": 40,
+      "mask": false,
+      "rationale": "Best Practice Catalog unknown customer (format-valid)"
+    },
+    {
+      "entryId": "bp-invalid-format",
+      "field": "customerId",
+      "value": "CUS-AB12",
+      "category": "invalid_format",
+      "expectedPath": "validation_error",
+      "priority": 40,
+      "mask": false,
+      "rationale": "Best Practice Catalog invalid format (letters in numeric part)"
+    },
+    {
+      "entryId": "bp-missing-required",
+      "field": "customerId",
+      "value": "",
+      "category": "missing_required",
+      "expectedPath": "validation_error",
+      "priority": 40,
+      "mask": false,
+      "rationale": "Best Practice Catalog empty required field"
+    },
+    {
+      "entryId": "bp-boundary-min",
+      "field": "customerId",
+      "value": "CUS-0000",
+      "category": "boundary",
+      "expectedPath": "detail_or_not_found",
+      "priority": 30,
+      "mask": false,
+      "rationale": "Boundary: minimum zero-padded id matching pattern"
+    }
+  ]
+}

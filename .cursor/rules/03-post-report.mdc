@@ -1,0 +1,78 @@
+---
+description: Phase 작업 후 docs/report 날짜별 요약 보고 의무. alwaysApply.
+alwaysApply: true
+---
+
+# Post Report — 단계 인식용 작업 요약 (절대)
+
+가장 중요한 지침으로 `만약 docs 폴더` 내 중요 지침이 잘못 작성돼, 코드를 전면 수정했고 지침에 준하지 않게 개발되고 수정됐다면, `docs` 지침을 꼭 수정 하시기 바랍니다.
+
+활성 SSOT: `docs/index.md` · 완료 Gate 보고: `docs/06.완료보고/`  
+본 규칙은 **사람이 어떤 단계를 수행했는지 인식**할 수 있도록  
+세션/작업 단위 요약을 `docs/report/`에 남긴다.
+
+## 언제 작성하는가
+
+```text
+1. Phase 작업 세션을 의미 있게 진행한 뒤 (구현·검증·문서 중 하나라도)
+2. Gate 통과/실패와 무관하게 — 진행 흔적을 남긴다
+3. 같은 날짜에 같은 Phase를 이어서 하면 번호를 올린다
+```
+
+`docs/06.완료보고/PHASE-XX.md`는 Phase Gate 완료 보고(정식).  
+`docs/report/`는 **날짜·회차 단위의 작업 일기/요약**(사람이 단계 인식용). 둘 다 쓴다.
+
+## 경로 · 파일명 규칙
+
+```text
+docs/report/
+  README.md
+  YYYYMMDD/                 # 작업 날짜 (로컬 기준)
+    {phase}_{n}.md          # 예: 00_1.md, 00_2.md, 05_1.md
+```
+
+| 토큰 | 의미 | 예시 |
+|---|---|---|
+| `YYYYMMDD` | 작업일 | `20260804` |
+| `{phase}` | Phase 번호 2자리 | `00`, `09`, `99` |
+| `{n}` | 그날 해당 Phase의 몇 번째 요약 | `1`, `2`, `3` |
+
+같은 날 Phase 00을 두 번 정리하면 `00_1.md` → `00_2.md`.
+
+## 필수 본문 구조
+
+```markdown
+# {phase}_{n} — 한 줄 제목
+
+- 날짜:
+- Phase:
+- 회차:
+- 작업자/Agent:
+- 기준 포인터: docs/index.md 현재 Phase
+
+## 1. 이번 단계에서 한 일
+(사람이 읽을 수 있게 5~15줄)
+
+## 2. 변경·산출물
+| 경로 | 목적 |
+|---|---|
+
+## 3. 실행·검증
+- 실행한 명령
+- 관측 결과 (Pass/Fail 단정 금지 — 관측만)
+
+## 4. 다음 단계
+- 남은 Gate / 전달사항
+
+## 5. 핵심 근거 (필수)
+이 요약을 이렇게 쓴 근거를 bullet으로 명시한다.
+- 근거 문서/Gate/사용자 지시/실행 artifact 경로
+- 추정만으로 채운 항목이 있으면 `missing_data`
+```
+
+## Guardrail
+
+- Evidence 없는 품질 단정·HITL Pass 표현 금지
+- archive / 옛 프롬프트를 SSOT 근거로 쓰지 않는다
+- `docs/index.md` Phase 포인터와 파일명의 `{phase}`를 맞춘다
+- 첫 작성 시 `docs/report/README.md`와 `docs/index.md` 목차에 `report/`가 없으면 추가한다

@@ -1,0 +1,6 @@
+{
+  "notes": "sdd-gate",
+  "echo": {
+    "probe": true
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "serviceId": "customer-search",
+  "seed": 42,
+  "buildProfile": true,
+  "budget": 6,
+  "componentContractPath": "../../../../../../artifacts/analysis/IG-106aa76e28a2/contracts/placeholder.json"
+}

@@ -1,0 +1,67 @@
+# =============================================================================
+# AI Hackerton — .gitignore
+# =============================================================================
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# --- Node / Frontend build ---
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+
+# --- 환경설정 (공유는 .env.example) ---
+.env
+.env.local
+.env.*.local
+backend/.env
+frontend/.env
+
+# --- Runtime / DB 산출물 ---
+backend/runtime/*/
+backend/data/*.db
+backend/data/*.jsonl
+artifacts/**
+
+# --- OS / IDE ---
+.DS_Store
+node_modules/
+.venv/
+.data/
+.next/
+.next-build/
+dist/
+build/
+target/
+*.tsbuildinfo
+Thumbs.db
+.idea/
+*.swp
+*.swo
+
+# --- Playwright / 브라우저 E2E ---
+.playwright-mcp/
+**/playwright-report/
+**/blob-report/
+**/test-results/
+**/e2e-results/
+**/playwright/.cache/
+
+# --- ad-hoc 캡처 ---
+docs/report/screenshots/
+/*.png
+/*.jpg
+/*.jpeg
+/*.webp
+/*.log

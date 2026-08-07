@@ -1,0 +1,5 @@
+{
+  "workspacePath": "",
+  "commitSha": "missing_data",
+  "note": "Connect a local Spring Boot workspace via Console repository sync. Built-in sample-targets/customer-service-be was removed."
+}
