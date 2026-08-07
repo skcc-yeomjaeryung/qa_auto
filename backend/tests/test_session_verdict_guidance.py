@@ -22,6 +22,7 @@ SUMMARY_PROMPT = PROMPTS / "run" / "summarize_run_system.md"
 BIND_PROMPT = PROMPTS / "run" / "bind_dom_inputs_system.md"
 NARRATE_PROMPT = PROMPTS / "scenario" / "narrate_bind_system.md"
 CONTRACT_DOC = REPO_ROOT / "docs" / "03.계약과예시" / "08.세션선행조건과판정계약.md"
+RUNTIME_PROMPTS = tuple(sorted(PROMPTS.rglob("*_system.md")))
 
 SESSION_POLICIES = (
     "no_auth",
@@ -49,8 +50,8 @@ def test_session_prompt_requires_login_precondition() -> None:
     text = _text(SESSION_PROMPT)
     for policy in SESSION_POLICIES:
         assert policy in text, f"sessionPolicy 값 누락: {policy}"
-    # 로그아웃은 예외 없이 선행 로그인 · 계정은 연결 정보 참조만
-    assert "로그아웃" in text and "선행 로그인" in text
+    assert "Every logout scenario requires prior login" in text
+    assert "Continue the main scenario in the same browser session" in text
     assert "environment.loginId" in text and "environment.loginSecret" in text
     assert "authRequired" in text and "preconditionSteps" in text
 
@@ -59,7 +60,7 @@ def test_verdict_prompt_forbids_endpoint_reach_as_success() -> None:
     text = _text(VERDICT_PROMPT)
     for verdict in VERDICTS:
         assert verdict in text, f"verdict 값 누락: {verdict}"
-    assert "도달 ≠ 성공" in text
+    assert "Reachability is not success" in text
     assert "Allowlist" in text  # 관측된 결함 신호를 실패로 다룬다
     assert "coverageNote" in text and "blockingIssues" in text
     assert "session_missing" in text
@@ -68,14 +69,26 @@ def test_verdict_prompt_forbids_endpoint_reach_as_success() -> None:
 def test_summary_prompt_carries_verdict_reason() -> None:
     text = _text(SUMMARY_PROMPT)
     assert "verdict" in text
-    assert "사유" in text
-    assert "성공으로 쓰지 않는다" in text
+    assert "evidence-based reason" in text
+    assert "Do not describe page/endpoint reachability as success" in text
 
 
 def test_bind_prompt_uses_registered_account_reference() -> None:
     text = _text(BIND_PROMPT)
     assert "environment.loginSecret" in text
-    assert "값을 만들지 않는다" in text
+    assert "Never generate login credentials" in text
+
+
+def test_runtime_system_prompts_have_korean_archives() -> None:
+    assert len(RUNTIME_PROMPTS) == 11
+    for runtime_prompt in RUNTIME_PROMPTS:
+        archive = runtime_prompt.with_name(f"{runtime_prompt.stem}_KOR.md")
+        runtime_text = _text(runtime_prompt)
+        archive_text = _text(archive)
+        assert runtime_text.splitlines()[0] == archive_text.splitlines()[0]
+        assert any("가" <= char <= "힣" for char in archive_text)
+        assert not any("가" <= char <= "힣" for char in runtime_text)
+        assert "Model compatibility" in runtime_text or "model" in runtime_text.lower()
 
 
 def test_skill_contracts_reference_guidance() -> None:

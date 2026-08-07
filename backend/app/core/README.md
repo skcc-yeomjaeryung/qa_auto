@@ -58,7 +58,9 @@ Prometheus/Grafana는 `/metrics`의 `qa_auto_model_invocations_total`, `qa_auto_
 ## 프롬프트 관리
 
 역할 프롬프트의 SSOT는 `app/prompts/`다. Core와 서비스는 `PromptCatalog`를 통해 LangChain
-`ChatPromptTemplate` 또는 system prompt를 로드하고, 버전과 SHA-256을 함께 남긴다. 소스 코드 안에 역할 시스템 프롬프트를 직접 작성하지 않는다.
+`ChatPromptTemplate` 또는 system prompt를 로드하고, 버전과 SHA-256을 함께 남긴다. 런타임은 영어
+`*_system.md`만 참조하며, 동일 이름의 `*_system_KOR.md`는 사람 검토용 원문 보관본이다. 소스 코드 안에
+역할 시스템 프롬프트를 직접 작성하지 않는다. 상세 정책은 `app/prompts/README.md`를 따른다.
 
 ## 단일 import 규칙
 
