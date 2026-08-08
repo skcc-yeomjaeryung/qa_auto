@@ -30,6 +30,8 @@ export default function RunDetailPage() {
   }, [runId]);
 
   const narrative = useMemo(() => narrateRunSteps(run?.steps || []), [run]);
+  const diagnosis = run?.result?.runDiagnosis;
+  const attentionRequired = diagnosis?.outcome === "undetermined";
 
   return (
     <PageShell
@@ -68,10 +70,12 @@ export default function RunDetailPage() {
         {run && (
           <>
             <div className="run-summary-bar">
-              <span className={`outcome-pill outcome-${run.outcomeKind || "unknown"}`}>
-                {statusKo(run.status)}
+              <span className={`outcome-pill outcome-${attentionRequired ? "warning" : run.outcomeKind || "unknown"}`}>
+                {attentionRequired ? "확인 필요" : statusKo(run.status)}
               </span>
-              <span className="muted">{run.outcomeSummary || run.observationSummary || "관측 요약 없음"}</span>
+              <span className="muted">
+                {diagnosis?.problemSummary || run.outcomeSummary || run.observationSummary || "관측 요약 없음"}
+              </span>
               <span className="muted">실행 {formatDateTime(run.createdAt)}</span>
             </div>
 
