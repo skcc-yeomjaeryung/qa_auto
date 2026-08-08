@@ -56,6 +56,15 @@ type RunDiagnosis = {
   handoffMessage?: string;
 };
 
+type ScenarioAugmentation = {
+  mode?: string;
+  hypothesis?: string;
+  evidenceBasis?: string[];
+  confidence?: number;
+  humanReviewRequired?: boolean;
+  promotionRule?: string;
+};
+
 type LatestRun = {
   runId: string;
   outcomeKind?: string | null;
@@ -258,10 +267,21 @@ export function ScenarioDetailPanel({
   const criteria = (result.verdictCriteria as VerdictCriterion[]) || [];
   const runVerdict = latestRun?.result?.verdict || null;
   const runDiagnosis = latestRun?.result?.runDiagnosis || null;
+  const attentionWarning = ["destructive_policy_blocked", "input_precondition_invalid"].includes(
+    String(runDiagnosis?.causeCategory || ""),
+  );
   const policyBlocked = runDiagnosis?.causeCategory === "destructive_policy_blocked";
-  const outcomeKind = policyBlocked
+  const outcomeKind = attentionWarning
     ? "policy"
     : latestRun?.outcomeKind || (latestRun ? "unknown" : null);
+  const augmentation = (result.scenarioAugmentation || null) as ScenarioAugmentation | null;
+  const latestNeedsAttention = Boolean(
+    latestRun &&
+      (attentionWarning ||
+        runVerdict?.verdict === "expected_not_met" ||
+        runVerdict?.verdict === "undetermined" ||
+        latestRun.outcomeKind === "unknown"),
+  );
   const observedById = new Map(
     (runVerdict?.criteriaResults || runVerdict?.criteria || []).map(
       (c) => [String(c.id), c] as const,
@@ -299,6 +319,23 @@ export function ScenarioDetailPanel({
           )}
         </div>
       </header>
+
+      {latestNeedsAttention && (
+        <section
+          className={`sd-attention-banner ${attentionWarning || runVerdict?.verdict === "undetermined" ? "is-warning" : "is-failure"}`}
+          data-testid="scenario-attention-banner"
+          role="alert"
+        >
+          <div>
+            <span>{attentionWarning ? "담당자 확인 필요" : "기대 결과 불일치"}</span>
+            <strong>{runDiagnosis?.problemSummary || runDiagnosis?.headline || runVerdict?.reason || "최근 실행 결과를 확인해야 합니다."}</strong>
+            <p>{runDiagnosis?.actions?.[0]?.action || runDiagnosis?.retestCondition || "실행 단계와 증적을 확인한 뒤 같은 조건으로 재검증하세요."}</p>
+          </div>
+          <Link href={`/runs/${encodeURIComponent(latestRun!.runId)}`}>
+            같은 실행 ID로 확인 · {latestRun!.runId}
+          </Link>
+        </section>
+      )}
 
       <div className="sd-tabs" role="tablist" aria-label="시나리오 상세 보기 방식">
         {TABS.map((item) => {
@@ -352,6 +389,20 @@ export function ScenarioDetailPanel({
                 ))}
               </ol>
             </article>
+
+            {augmentation && (
+              <article className="sd-card sd-augmentation" data-testid="scenario-augmentation">
+                <h4>
+                  <span className="sd-ai-badge">AI 예측 보강</span>
+                  사람이 놓치기 쉬운 테스트 가설
+                </h4>
+                <p>{augmentation.hypothesis || "분석 근거에서 추가 검증 후보를 도출했습니다."}</p>
+                <ul className="sd-chips">
+                  {(augmentation.evidenceBasis || []).map((item) => <li key={item}>{item}</li>)}
+                </ul>
+                <small>{augmentation.promotionRule || "실행 증적과 HITL 확인 전에는 결함으로 확정하지 않습니다."}</small>
+              </article>
+            )}
 
             <article className="sd-card">
               <h4>
@@ -494,7 +545,7 @@ export function ScenarioDetailPanel({
 
             <article
               className={`sd-card sd-test-result is-${
-                policyBlocked
+                attentionWarning
                   ? "policy"
                   : runVerdict?.verdict === "expected_met"
                   ? "success"
@@ -510,6 +561,8 @@ export function ScenarioDetailPanel({
                   <h4>
                     {policyBlocked
                       ? "실행 정책으로 제출하지 않음"
+                      : attentionWarning
+                        ? "실행 선행조건 확인 필요"
                       : runVerdict?.verdict === "expected_met"
                       ? "성공 기준 충족"
                       : runVerdict?.verdict === "expected_not_met"
@@ -523,7 +576,7 @@ export function ScenarioDetailPanel({
                   <span className="sd-test-result-time">{formatDateTime(latestRun.createdAt)}</span>
                 )}
               </div>
-              {latestRun && policyBlocked ? (
+              {latestRun && attentionWarning ? (
                 <div className="sd-policy-guide" data-testid="sd-policy-guide">
                   <div>
                     <span>1</span>
@@ -532,8 +585,8 @@ export function ScenarioDetailPanel({
                   </div>
                   <div>
                     <span>2</span>
-                    <strong>왜 차단됐나요?</strong>
-                    <p>{runDiagnosis?.causeSummary || "배치·자동 실행은 데이터 변경 동작을 기본 차단합니다."}</p>
+                    <strong>왜 확인이 필요한가요?</strong>
+                    <p>{runDiagnosis?.causeSummary || "실행 정책 또는 테스트 데이터 선행조건을 확인해야 합니다."}</p>
                   </div>
                   <div>
                     <span>3</span>
@@ -572,11 +625,13 @@ export function ScenarioDetailPanel({
                   <p>
                     {policyBlocked
                       ? "서비스 오류로 확정된 결과가 아닙니다. 아래 실행 준비에서 데이터 변경 1회를 승인하면 실제 결과를 다시 관측합니다."
+                      : attentionWarning
+                        ? "서비스 결함으로 확정하기 전에 테스트 데이터와 실행환경 선행조건을 보완한 뒤 같은 실행 조건으로 재검증합니다."
                       : "단계·증적·원인·후속 조치는 실행 이력에서 집중해서 확인합니다."}
                   </p>
                   <div className="sd-test-result-cta">
-                    {policyBlocked && <a className="primary-btn" href="#scenario-run-console">1회 실행 준비로 이동</a>}
-                    <Link className={policyBlocked ? "ghost-btn" : "primary-btn"} href={`/runs/${encodeURIComponent(latestRun.runId)}`}>
+                    {attentionWarning && <a className="primary-btn" href="#scenario-run-console">재실행 준비로 이동</a>}
+                    <Link className={attentionWarning ? "ghost-btn" : "primary-btn"} href={`/runs/${encodeURIComponent(latestRun.runId)}`}>
                       실행 이력 상세 보기
                     </Link>
                   </div>

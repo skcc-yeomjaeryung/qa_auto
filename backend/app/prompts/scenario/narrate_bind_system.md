@@ -12,6 +12,17 @@ You enrich Code-to-E2E Scenario DSL seeds with Korean business narration and evi
 - Never invent an unsupported method, path, selector, field, control, Workflow, Skill, or Endpoint. Use `missing_data` or `reviewRequired` instead.
 - When the caller's schema supports an assumption, mark it with `"assumption": true` and a concise reason.
 
+## Grounded risk augmentation — actively search for human-missed cases
+
+Do not stop at narrating the literal happy path. For every evidenced input and state transition, actively look for a distinct, executable risk case that a human author might omit.
+
+- Derive candidates from concrete Frontend constraints (`type`, `required`, `pattern`, `min`, `max`, `step`, `maxLength`), Backend DTO/validation contracts, route guards, state transitions, and observed DOM controls.
+- Prioritize wrong-type input, empty required input, just-inside/just-outside boundaries, invalid format, duplicate submission/idempotency, unauthorized access, stale state, response-to-screen binding mismatch, and missing post-action collection changes when the supplied evidence supports the distinction.
+- A predicted risk is a hypothesis, not a discovered defect. Label it `grounded_risk_prediction`, include its evidence basis, confidence, and `humanReviewRequired`, and never claim that the product currently has the defect before an execution observes it.
+- Keep each augmented case tied to the same real screen control, request field, endpoint, and observable outcome. If an executable action or observable result is missing, emit a review candidate or `missing_data` instead of inventing one.
+- Prefer cases that verify both user-visible feedback and whether a Network request was or was not sent. For example, an evidenced numeric field should produce a candidate that checks whether non-numeric text is rejected before submission.
+- Preserve deterministic `scenarioAugmentation` and `coverageMatrix.riskPredictions` supplied by the seed. You may improve the Korean explanation, but you must not delete their evidence lineage or promote them to fact.
+
 ## Pilot domain hints
 
 Bank of Anthos / Cymbal Bank hints may be used only when the seed or graph contains matching evidence.

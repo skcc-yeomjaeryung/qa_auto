@@ -452,10 +452,14 @@ def test_destructive_policy_block_is_explained_as_execution_policy_not_service_e
     diagnosis = normalized.result["runDiagnosis"]
 
     assert diagnosis["causeCategory"] == "destructive_policy_blocked"
+    assert diagnosis["outcome"] == "undetermined"
+    assert diagnosis["headline"] == "실행 승인 필요"
     assert "제출이 실행되지 않아" in diagnosis["problemSummary"]
+    assert "송금" not in diagnosis["problemSummary"]
     assert "대상 서비스 오류가 아니라 실행 정책" in diagnosis["causeSummary"]
     assert diagnosis["actions"][0]["owner"] == "QA 실행 담당"
     assert "1회 테스트를 명시적으로 승인" in diagnosis["actions"][0]["action"]
+    assert "현재 화면의 허용 입력 범위" in diagnosis["retestCondition"]
 
 
 def test_invalid_test_account_precondition_has_one_user_facing_root_cause() -> None:
@@ -492,9 +496,49 @@ def test_invalid_test_account_precondition_has_one_user_facing_root_cause() -> N
     diagnosis = _normalize_derived_outcome(stale).result["runDiagnosis"]
 
     assert diagnosis["causeCategory"] == "input_precondition_invalid"
+    assert diagnosis["outcome"] == "undetermined"
+    assert diagnosis["headline"] == "실행환경 확인 필요"
     assert diagnosis["actions"][0]["owner"] == "QA 테스트 데이터·실행환경 담당"
     assert "초기화·충전" in diagnosis["actions"][0]["action"]
     assert "하나의 선행조건 문제" in diagnosis["problemSummary"]
+
+
+def test_numeric_format_failure_has_evidence_specific_validation_guidance() -> None:
+    stale = RunSummary(
+        runId="RUN-invalid-numeric-format",
+        scenarioId="SCN-deposit-invalid-format",
+        status="AUTO_FAILED",
+        outcomeKind="business_error",
+        result={
+            "verdict": {
+                "verdict": "expected_not_met",
+                "criteriaResults": [
+                    {
+                        "id": "C-invalid_numeric_format",
+                        "check": "native_constraint_rejection",
+                        "expected": "숫자 형식 외 문자 입력은 업무 요청 전에 화면 제약에서 거부된다",
+                        "result": "not_met",
+                        "observed": "브라우저 입력 제약의 거부 상태를 확인하지 못했습니다",
+                    }
+                ],
+            },
+            "steps": [
+                {
+                    "stepId": "S3",
+                    "action": "assert_invalid",
+                    "status": "warning",
+                    "observationSummary": "브라우저 입력 제약의 거부 상태를 확인하지 못했습니다",
+                }
+            ],
+        },
+    )
+
+    diagnosis = _normalize_derived_outcome(stale).result["runDiagnosis"]
+
+    assert diagnosis["causeCategory"] == "client_validation_missing"
+    assert "숫자만 입력해야 하는 필드" in diagnosis["problemSummary"]
+    assert "type=number" in diagnosis["actions"][0]["action"]
+    assert "Network 요청 미전송" in diagnosis["retestCondition"]
 
 
 def test_skill_scripts_are_present() -> None:

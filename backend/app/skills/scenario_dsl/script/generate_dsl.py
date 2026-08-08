@@ -1010,6 +1010,9 @@ def _scenario_from_action_journey(
             for key in ("min", "max", "step", "pattern")
             if control.get(key) not in (None, "")
         }
+        html_type = str(control.get("type") or "").lower()
+        if html_type:
+            constraints["htmlType"] = html_type
         if credential_ref:
             continue
         inputs_spec.append(
@@ -1261,6 +1264,8 @@ def _business_variant(
     value: Any = None,
     value_strategy: str | None = None,
     validation_only: bool = False,
+    risk_hypothesis: str | None = None,
+    evidence_basis: list[str] | None = None,
 ) -> dict[str, Any]:
     """Clone one evidenced journey into a distinct input-coverage case."""
     scenario = deepcopy(base)
@@ -1274,6 +1279,24 @@ def _business_variant(
         "source": "frontend_constraint+runtime_dom+backend_contract",
         "field": field,
         "validationOnly": validation_only,
+    }
+    scenario["scenarioAugmentation"] = {
+        "mode": "grounded_risk_prediction" if risk_hypothesis else "constraint_derived",
+        "hypothesis": risk_hypothesis or f"분석된 입력 제약의 {label} 동작을 별도 사례로 검증합니다.",
+        "evidenceBasis": list(
+            dict.fromkeys(
+                evidence_basis
+                or [
+                    f"input:{field}",
+                    "frontend_constraint",
+                    "runtime_dom",
+                    "backend_contract",
+                ]
+            )
+        ),
+        "confidence": 0.9 if risk_hypothesis else 0.95,
+        "humanReviewRequired": True,
+        "promotionRule": "실행 증적과 HITL 확인 전에는 결함 사실로 확정하지 않음",
     }
     scenario["categoryHints"] = ["E2E", category]
     scenario["inputDefaults"] = {field: value} if value_strategy is None else {}
@@ -1395,6 +1418,7 @@ def expand_evidenced_case_matrix(scenarios: list[dict[str, Any]]) -> list[dict[s
         step = _decimal_constraint(constraints.get("step")) or Decimal("1")
         variants: list[dict[str, Any]] = []
         seq = 2
+        html_type = str(constraints.get("htmlType") or amount.get("type") or "").lower()
         if minimum is not None:
             variants.append(_business_variant(
                 scenario, seq=seq, key="minimum_boundary", label="최소 허용값 경계",
@@ -1424,6 +1448,7 @@ def expand_evidenced_case_matrix(scenarios: list[dict[str, Any]]) -> list[dict[s
                 category="validation", field=field, value=_format_decimal(maximum + step),
                 validation_only=True,
             ))
+            seq += 1
         elif "balance" in str(constraints.get("max") or "").lower():
             variants.append(_business_variant(
                 scenario, seq=seq, key="observed_balance_boundary", label="실행 직전 잔액 전액 경계",
@@ -1435,9 +1460,42 @@ def expand_evidenced_case_matrix(scenarios: list[dict[str, Any]]) -> list[dict[s
                 category="business_error", field=field,
                 value_strategy="observed_balance_plus_step", validation_only=True,
             ))
+            seq += 1
+        # Add newly predicted cases after the long-standing deterministic matrix
+        # so existing case IDs keep their meaning across regeneration.
+        if html_type == "number":
+            variants.append(_business_variant(
+                scenario,
+                seq=seq,
+                key="invalid_numeric_format",
+                label="숫자 형식 외 문자 입력 거부",
+                category="validation",
+                field=field,
+                value="한글입력",
+                validation_only=True,
+                risk_hypothesis=(
+                    "숫자 전용 필드가 문자 입력을 허용하거나 제출 전 검증을 우회하는 결함을 사람이 놓칠 수 있습니다."
+                ),
+                evidence_basis=[
+                    f"input:{field}",
+                    "frontend_constraint:type=number",
+                    "runtime_dom:input-control",
+                    "backend_contract:request-field",
+                ],
+            ))
         coverage_matrix = {
             "source": "frontend_constraint+runtime_dom+backend_contract",
             "variants": ["happy_path", *[str(item["caseVariant"]["key"]) for item in variants]],
+            "riskPredictions": [
+                {
+                    "key": str(item["caseVariant"]["key"]),
+                    "hypothesis": str((item.get("scenarioAugmentation") or {}).get("hypothesis") or ""),
+                    "evidenceBasis": list((item.get("scenarioAugmentation") or {}).get("evidenceBasis") or []),
+                    "humanReviewRequired": True,
+                }
+                for item in variants
+                if (item.get("scenarioAugmentation") or {}).get("mode") == "grounded_risk_prediction"
+            ],
             "fixedScenarioLimit": False,
         }
         scenario["coverageMatrix"] = coverage_matrix

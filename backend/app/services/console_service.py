@@ -33,7 +33,7 @@ from app.services.repository_sync import RepositorySyncService
 from app.services.resource_tree import build_resource_tree, expand_resource_node
 from app.services.repository_models import ProjectCreate
 from app.services.run_models import RunCreateRequest
-from app.services.run_service import BrowserRunService
+from app.services.run_service import BrowserRunService, _normalize_derived_outcome
 from app.services.scenario_models import PipelineRequest
 
 logger = logging.getLogger(__name__)
@@ -1174,10 +1174,67 @@ class ConsoleService:
             for item in self.store.list_flow_node_runtime(graph_id)
         }
         nodes, scenario_id = self._flow_nodes(graph_id)
-        latest_run = next(iter(self.store.list_runs(scenario_id)), None) if scenario_id else None
+        raw_latest_run = next(iter(self.store.list_runs(scenario_id)), None) if scenario_id else None
+        latest_run = _normalize_derived_outcome(raw_latest_run) if raw_latest_run else None
         observed_by_step = {
             str(step.stepId): step for step in (getattr(latest_run, "steps", []) or [])
         }
+        run_result = dict(getattr(latest_run, "result", {}) or {}) if latest_run else {}
+        verdict = run_result.get("verdict") if isinstance(run_result.get("verdict"), dict) else {}
+        diagnosis = run_result.get("runDiagnosis") if isinstance(run_result.get("runDiagnosis"), dict) else {}
+        verdict_kind = str(verdict.get("verdict") or "")
+        cause_category = str(diagnosis.get("causeCategory") or verdict.get("blockedCause") or "")
+        policy_warning = cause_category in {"destructive_policy_blocked", "input_precondition_invalid"}
+        attention_status = (
+            "warning"
+            if verdict_kind == "undetermined" or policy_warning
+            else "failure"
+            if verdict_kind == "expected_not_met"
+            else None
+        )
+        attention_message = str(
+            diagnosis.get("problemSummary")
+            or diagnosis.get("causeSummary")
+            or verdict.get("reason")
+            or ""
+        )
+        first_action = next(
+            (
+                str(item.get("action") or "")
+                for item in (diagnosis.get("actions") or [])
+                if isinstance(item, dict) and item.get("action")
+            ),
+            "",
+        )
+        if first_action:
+            attention_message = f"{attention_message} · 조치: {first_action}".strip(" ·")
+        criterion_status: dict[str, str] = {}
+        for item in (verdict.get("criteriaResults") or verdict.get("criteria") or []):
+            if not isinstance(item, dict) or not item.get("id"):
+                continue
+            result = str(item.get("result") or "")
+            if result == "not_met":
+                criterion_status[str(item["id"])] = "failure"
+            elif result == "undetermined":
+                criterion_status[str(item["id"])] = "warning"
+        attention_step_ids = {
+            str(step.stepId)
+            for step in (getattr(latest_run, "steps", []) or [])
+            if set(step.missingData or [])
+            & {"submit_blocked_destructive", "input_precondition_invalid"}
+        }
+        criterion_node_ids = {
+            str(node.get("id") or "")
+            for node in nodes
+            if str((node.get("attributes") or {}).get("criterionId") or "") in criterion_status
+        }
+        attention_node_ids = {
+            str(node.get("id") or "")
+            for node in nodes
+            if str((node.get("attributes") or {}).get("scenarioStepId") or "") in attention_step_ids
+        } | criterion_node_ids
+        if attention_status and not attention_node_ids and nodes:
+            attention_node_ids.add(str(nodes[-1].get("id") or ""))
         items: list[dict[str, Any]] = []
         for node in nodes:
             node_id = str(node.get("id") or "")
@@ -1205,6 +1262,13 @@ class ConsoleService:
             elif "pending" in vs:
                 status = "pending"
 
+            criterion_id = str(attrs.get("criterionId") or "")
+            if node_id in attention_node_ids:
+                status = criterion_status.get(criterion_id) or attention_status or status
+                if policy_warning:
+                    status = "warning"
+                err = attention_message or err
+
             seeded_input = (
                 _planned_step_input(node, latest_run)
                 if scenario_id
@@ -1231,7 +1295,7 @@ class ConsoleService:
                 # saved record was explicitly edited after the run.
                 current.update(saved)
                 current["operation"] = _flow_operation(node)
-                if observed and not saved.get("lastRetriedAt"):
+                if (observed or node_id in attention_node_ids) and not saved.get("lastRetriedAt"):
                     current["status"] = status
                     current["output"] = seeded_output
                     current["errorMessage"] = err

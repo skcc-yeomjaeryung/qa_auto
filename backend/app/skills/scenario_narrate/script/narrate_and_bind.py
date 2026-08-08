@@ -353,6 +353,7 @@ def _try_llm(
                 "inputDefaults": scn.get("inputDefaults"),
                 "inputStrategies": scn.get("inputStrategies"),
                 "coverageMatrix": scn.get("coverageMatrix"),
+                "scenarioAugmentation": scn.get("scenarioAugmentation"),
                 "steps": [
                     {
                         "stepId": s.get("id"),

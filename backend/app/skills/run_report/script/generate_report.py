@@ -164,6 +164,50 @@ def build_report(source: dict[str, Any]) -> dict[str, Any]:
     artifacts = [row for row in (evidence.get("artifacts") or []) if isinstance(row, dict)]
     steps = [row for row in (run.get("steps") or []) if isinstance(row, dict)]
     run_result = dict(run.get("result") or {}) if isinstance(run.get("result"), dict) else {}
+    raw_diagnosis = (
+        dict(run_result.get("runDiagnosis") or {})
+        if isinstance(run_result.get("runDiagnosis"), dict)
+        else {}
+    )
+    diagnosis_actions = [
+        {
+            "owner": _text(item.get("owner")),
+            "action": _text(item.get("action")),
+            "reason": _text(item.get("reason")),
+        }
+        for item in (raw_diagnosis.get("actions") or [])
+        if isinstance(item, dict) and item.get("action")
+    ]
+    cause_category = _text(raw_diagnosis.get("causeCategory") or "unknown")
+    raw_diagnosis_outcome = _text(raw_diagnosis.get("outcome") or "undetermined")
+    diagnosis_outcome = (
+        "undetermined"
+        if cause_category in {"destructive_policy_blocked", "input_precondition_invalid"}
+        else raw_diagnosis_outcome
+    )
+    diagnosis = {
+        "outcome": diagnosis_outcome,
+        "headline": _text(raw_diagnosis.get("headline") or "판정 근거 확인 필요"),
+        "problemSummary": _text(
+            raw_diagnosis.get("problemSummary")
+            or run.get("outcomeSummary")
+            or run.get("observationSummary")
+        ),
+        "causeCategory": cause_category,
+        "causeSummary": _text(raw_diagnosis.get("causeSummary") or "관측 근거를 추가로 확인해야 합니다"),
+        "evidence": [_text(item) for item in (raw_diagnosis.get("evidence") or [])],
+        "actions": diagnosis_actions,
+        "retestCondition": _text(
+            raw_diagnosis.get("retestCondition")
+            or "누락된 관측 근거를 보강한 뒤 같은 입력과 실행환경으로 다시 실행하세요"
+        ),
+        "handoffMessage": _text(
+            raw_diagnosis.get("handoffMessage")
+            or "개발·QA 담당자가 실행 근거를 확인한 뒤 재검증해 주세요"
+        ),
+        "mode": _text(raw_diagnosis.get("mode") or "deterministic"),
+        "humanDecisionRequired": True,
+    }
     source_screen = dict(scenario_body.get("source") or {})
     destination_screen = dict(scenario_body.get("destination") or {})
     request = dict(scenario_body.get("request") or {})
@@ -272,6 +316,10 @@ def build_report(source: dict[str, Any]) -> dict[str, Any]:
         for item in (evidence.get("missingData") or [])
     ):
         attention.append("증적 패키지에서 일부 자료가 수집되지 않았습니다")
+    if diagnosis["outcome"] == "failure":
+        attention.insert(0, diagnosis["problemSummary"])
+    elif diagnosis["outcome"] == "undetermined":
+        attention.insert(0, f"판정 근거 확인 필요: {diagnosis['problemSummary']}")
     if not attention:
         attention.append("자동 관측 자료 확인 후 최종 판정")
 
@@ -337,6 +385,7 @@ def build_report(source: dict[str, Any]) -> dict[str, Any]:
             "missingData": [_text(item) for item in (evidence.get("missingData") or [])],
             "artifacts": report_artifacts,
         },
+        "diagnosis": diagnosis,
         "review": {
             "finalDecision": "PENDING_HUMAN_REVIEW",
             "hitlRequired": True,
@@ -427,6 +476,7 @@ def render_report_html(report: dict[str, Any]) -> str:
     verification = report["verification"]
     evidence = report["evidence"]
     scenario = report["scenario"]
+    diagnosis = report["diagnosis"]
     action_labels = {
         "navigate": "화면 이동", "click": "클릭", "fill": "값 입력", "select": "항목 선택",
         "assert_visible": "화면 표시 확인", "assert_text": "안내 문구 확인",
@@ -558,6 +608,28 @@ def render_report_html(report: dict[str, Any]) -> str:
     observation_progress = _percent(observation_ok, observation_total)
     screenshot_progress = _percent(len(runtime_images), int(evidence.get("screenshotCount") or 0))
     masked_progress = _percent(evidence["maskedArtifactCount"], evidence["artifactCount"])
+    diagnosis_outcome = str(diagnosis.get("outcome") or "undetermined")
+    diagnosis_tone = "failure" if diagnosis_outcome == "failure" else "success" if diagnosis_outcome == "success" else "warning"
+    diagnosis_value = 100 if diagnosis_outcome == "success" else 0 if diagnosis_outcome == "failure" else 50
+    diagnosis_label = {
+        "success": "성공 기준 관측",
+        "failure": "기대 결과 불일치",
+        "undetermined": "담당자 확인 필요",
+    }.get(diagnosis_outcome, diagnosis.get("headline") or diagnosis_outcome)
+    diagnosis_color = "#198038" if diagnosis_tone == "success" else "#c73e4a" if diagnosis_tone == "failure" else "#b26a00"
+    diagnosis_actions = "".join(
+        "".join(
+            [
+                "<li>",
+                f"<strong>{esc(item['owner'])}</strong>",
+                f"<span>{esc(item['action'])}</span>",
+                f"<small>{esc(item['reason'])}</small>",
+                "</li>",
+            ]
+        )
+        for item in diagnosis.get("actions", [])
+    ) or "<li><strong>개발·QA 담당</strong><span>실행 단계와 증적을 확인한 뒤 같은 조건으로 재검증해 주세요.</span></li>"
+    diagnosis_evidence = "".join(f"<li>{esc(item)}</li>" for item in diagnosis.get("evidence", [])) or "<li>구조화된 실행 단계와 증적 패키지를 확인해 주세요.</li>"
     mascot_uri = _mascot_data_uri()
     mascot = f"<img class='mascot' src='{mascot_uri}' alt='QA 리포트 도우미 캐릭터'>" if mascot_uri else "<div class='mascot-fallback'>🤖</div>"
     technical_label = {
@@ -575,18 +647,20 @@ def render_report_html(report: dict[str, Any]) -> str:
 <style>
 :root{{--violet:#625cff;--violet-dark:#4338a8;--blue:#0043ce;--green:#198038;--amber:#b26a00;--red:#c73e4a;--ink:#20243a;--muted:#6f7285;--line:#e4e6ef;--soft:#f5f6fb}}
 *{{box-sizing:border-box}}body{{font-family:Arial,'Noto Sans KR',sans-serif;color:var(--ink);margin:0;background:var(--soft);-webkit-print-color-adjust:exact;print-color-adjust:exact}}main{{max-width:1120px;margin:24px auto;background:#fff;padding:34px;border-radius:18px}}.hero{{position:relative;min-height:154px;overflow:hidden;border:1px solid #ddd9ff;border-radius:18px;padding:26px 230px 26px 28px;background:linear-gradient(120deg,#f0eeff 0%,#eef7ff 58%,#fff1f4 100%)}}.hero:after{{content:'';position:absolute;width:240px;height:240px;border:1px solid rgba(98,92,255,.12);border-radius:50%;right:84px;top:-84px}}h1{{font-size:25px;line-height:1.35;margin:8px 0 6px}}h2{{font-size:19px;margin:34px 0 14px;color:var(--violet-dark);border-bottom:1px solid #e8e7f2;padding-bottom:9px}}h3{{font-size:15px;margin:24px 0 10px}}p{{line-height:1.55}}.kicker{{font-weight:800;color:var(--violet);font-size:12px;letter-spacing:.04em}}.hero-sub{{font-size:12px;color:var(--muted);margin:0}}.mascot{{position:absolute;right:18px;bottom:-50px;width:205px;height:205px;object-fit:contain;z-index:1}}.mascot-fallback{{position:absolute;right:48px;top:34px;font-size:70px}}.hero-status{{display:inline-flex;margin-top:14px;padding:6px 11px;border-radius:999px;background:#fff7e8;color:#8a5700;border:1px solid #f1cf96;font-size:12px;font-weight:800}}.guard{{background:#f1efff;border:1px solid #d9d4ff;padding:13px 15px;border-radius:10px;font-size:12px}}.metrics{{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}}.metric{{display:flex;align-items:center;gap:12px;padding:14px;border:1px solid var(--line);border-radius:12px;break-inside:avoid}}.donut{{--value:0;--color:var(--violet);position:relative;display:grid;place-items:center;width:58px;height:58px;border-radius:50%;background:conic-gradient(var(--color) calc(var(--value)*1%),#eceef4 0);flex:0 0 auto}}.donut:after{{content:'';position:absolute;inset:7px;border-radius:50%;background:#fff}}.donut strong{{position:relative;z-index:1;font-size:14px}}.metric-copy span{{display:block;color:var(--muted);font-size:10px}}.metric-copy strong{{display:block;margin-top:3px;font-size:14px}}.progress-card{{display:grid;grid-template-columns:40px 1fr;gap:10px;align-items:center;padding:14px 16px;border-radius:10px;border:1px solid var(--line)}}.progress-icon{{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--green);color:#fff;font-weight:900}}.progress-top{{display:flex;align-items:end;gap:8px;margin-bottom:6px}}.progress-top strong{{font-size:18px}}.progress-top span{{font-size:10px;color:var(--muted);letter-spacing:.04em}}.progress-track{{height:8px;border-radius:99px;background:#e0e0e0;overflow:hidden}}.progress-fill{{height:100%;border-radius:99px;background:var(--green)}}.journey{{display:grid;grid-template-columns:1fr 42px 1fr 42px 1fr;align-items:stretch;gap:8px}}.journey-card{{padding:15px;border:1px solid var(--line);border-radius:12px;background:#fafaff;break-inside:avoid}}.journey-card span{{display:block;font-size:10px;color:var(--violet);font-weight:800}}.journey-card strong{{display:block;margin:7px 0;font-size:14px}}.journey-card small{{color:var(--muted)}}.journey-arrow{{display:grid;place-items:center;color:var(--violet);font-size:24px;font-weight:900}}.status-bar{{display:flex;height:14px;border-radius:99px;overflow:hidden;background:#eceef4;margin:12px 0 8px}}.status-bar span{{min-width:0}}.status-ok{{background:var(--green)}}.status-warning{{background:#e6a23c}}.status-skipped{{background:#9aa0ad}}.status-error{{background:var(--red)}}.legend{{display:flex;gap:18px;font-size:11px;color:var(--muted)}}.legend b{{color:var(--ink)}}.finding-grid,.missing-grid{{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}}.finding,.missing-card{{border:1px solid #f1c783;background:#fffaf0;border-radius:10px;padding:12px;break-inside:avoid}}.finding.success{{border-color:#acd8b8;background:#f3fbf5}}.finding span,.missing-card span{{display:block;color:#9a6500;font-size:10px;font-weight:700}}.finding.success span{{color:var(--green)}}.finding strong,.missing-card strong{{display:block;margin:5px 0;font-size:13px}}.finding p,.missing-card p{{margin:0;color:#5f6073;font-size:12px;line-height:1.5}}.more-note{{font-size:11px;color:var(--muted)}}table{{width:100%;border-collapse:collapse;font-size:11px;page-break-inside:auto}}tr{{page-break-inside:avoid}}th,td{{border-bottom:1px solid #ececf2;text-align:left;padding:8px;vertical-align:top}}th{{background:#f7f7fb}}.tag{{display:inline-block;background:#eeeaff;color:#5146bc;padding:3px 7px;border-radius:999px;font-weight:700}}ul{{line-height:1.7}}.evidence-stats{{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}}.stat-card{{padding:13px;border:1px solid var(--line);border-radius:10px}}.stat-card span{{display:block;color:var(--muted);font-size:10px}}.stat-card strong{{display:block;margin-top:5px;font-size:18px}}.stage-gallery{{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}}figure{{margin:0}}.stage-evidence,.capture-evidence{{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff;break-inside:avoid}}.evidence-open{{display:block;width:100%;margin:0;padding:0;border:0;background:#f4f5f8;cursor:zoom-in}}.evidence-open:focus-visible{{outline:3px solid var(--violet);outline-offset:-3px}}.stage-evidence img{{display:block;width:100%;height:172px;object-fit:contain;background:#f4f5f8}}figcaption{{display:flex;justify-content:space-between;gap:8px;padding:9px 10px;font-size:10px}}figcaption strong{{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}figcaption span{{color:var(--muted);white-space:nowrap}}.capture-gallery{{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}}.capture-evidence img{{display:block;width:100%;height:138px;object-fit:cover;object-position:top;background:#f4f5f8}}.capture-note{{font-size:11px;color:var(--muted)}}.inventory-note{{padding:10px 12px;border-radius:9px;background:#f5f4ff;color:#555070;font-size:11px}}.evidence-viewer{{width:min(1180px,94vw);max-height:92vh;padding:0;border:0;border-radius:16px;box-shadow:0 24px 70px rgba(28,31,53,.38)}}.evidence-viewer::backdrop{{background:rgba(20,23,39,.78)}}.evidence-viewer header{{position:sticky;top:0;z-index:1;display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#fff;border-bottom:1px solid var(--line)}}.evidence-viewer header strong{{font-size:13px}}.evidence-viewer-close{{border:1px solid var(--line);border-radius:8px;background:#fff;padding:7px 11px;cursor:pointer}}.evidence-viewer img{{display:block;max-width:100%;height:auto;margin:0 auto;background:#fff}}code{{font-size:9px;color:#66697b}}main>footer{{margin-top:30px;color:#777b8e;font-size:10px}}@media print{{@page{{size:A4;margin:12mm}}body{{background:#fff}}main{{margin:0;max-width:none;border-radius:0;padding:0}}.hero{{min-height:135px}}.mascot{{width:170px;height:170px}}h2{{break-after:avoid}}.metrics,.evidence-stats{{grid-template-columns:repeat(4,1fr)}}.capture-gallery,.stage-gallery{{grid-template-columns:repeat(3,1fr)}}.capture-evidence img{{height:105px}}.stage-evidence img{{height:135px}}.hero,.metric,.progress-card,.journey-card,.finding,.missing-card,.stage-evidence,.capture-evidence{{break-inside:avoid}}.evidence-viewer{{display:none}}}}@media(max-width:760px){{main{{margin:0;padding:18px}}.hero{{padding:22px 20px}}.mascot{{display:none}}.metrics,.evidence-stats,.finding-grid,.missing-grid,.stage-gallery,.capture-gallery{{grid-template-columns:1fr}}.journey{{grid-template-columns:1fr}}.journey-arrow{{transform:rotate(90deg)}}}}
+.hero-status.is-failure{{background:#fff0f0;color:#9d222d;border-color:#efb5ba}}.hero-status.is-success{{background:#edf9f1;color:#126b31;border-color:#a9dbb8}}.diagnosis-card{{border:1px solid #efd0d3;border-left:6px solid var(--red);border-radius:14px;background:#fff6f6;padding:18px;break-inside:avoid}}.diagnosis-card.is-warning{{border-color:#efd49f;border-left-color:var(--amber);background:#fffaf0}}.diagnosis-card.is-success{{border-color:#afd9ba;border-left-color:var(--green);background:#f3fbf5}}.diagnosis-card header{{display:flex;align-items:center;justify-content:space-between;gap:12px}}.diagnosis-card header span{{padding:4px 8px;border-radius:999px;background:#fff;font-size:10px;font-weight:800}}.diagnosis-card h3{{margin:0}}.diagnosis-summary{{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}}.diagnosis-summary>div{{padding:12px;border:1px solid rgba(90,60,70,.12);border-radius:10px;background:#fff}}.diagnosis-summary strong{{display:block;font-size:11px}}.diagnosis-summary p{{margin:5px 0 0;font-size:12px;color:#5f6073}}.diagnosis-actions{{display:grid;gap:8px;padding:0;list-style:none}}.diagnosis-actions li{{display:grid;grid-template-columns:130px 1fr;gap:4px 12px;padding:10px 12px;border-radius:9px;background:#fff}}.diagnosis-actions strong{{font-size:11px}}.diagnosis-actions span{{font-size:12px;line-height:1.5}}.diagnosis-actions small{{grid-column:2;color:var(--muted)}}.diagnosis-retest{{padding:11px 13px;border-radius:9px;background:#f1efff;font-size:12px}}
 </style></head><body><main>
-<header class='hero'><span class='kicker'>REPORT AGENT · 시각화 실행 검토</span><h1>{esc(report['title'])}</h1><p class='hero-sub'>{esc(report['project']['name'])} · {esc(scenario['name'])} · {esc(report['runId'])}</p><span class='hero-status'>{esc(technical_label)} · 최종 판정은 담당자 검토</span>{mascot}</header>
+<header class='hero'><span class='kicker'>REPORT AGENT · 시각화 실행 검토</span><h1>{esc(report['title'])}</h1><p class='hero-sub'>{esc(report['project']['name'])} · {esc(scenario['name'])} · {esc(report['runId'])}</p><span class='hero-status is-{diagnosis_tone}'>{esc(diagnosis_label)} · 최종 판정은 담당자 검토</span>{mascot}</header>
 <p class='guard'>{esc(report['review']['guardrail'])}</p>
 <h2>1. 실행 결과 한눈에 보기</h2>
-<div class='metrics'><div class='metric'><div class='donut' style='--value:{execution_progress};--color:#625cff'><strong>{execution_progress}%</strong></div><div class='metric-copy'><span>실행 진행</span><strong>{execution['completedStepCount']}/{execution['plannedStepCount']}단계</strong></div></div><div class='metric'><div class='donut' style='--value:{observation_progress};--color:#198038'><strong>{observation_ok}</strong></div><div class='metric-copy'><span>정상 관측</span><strong>전체 {observation_total}단계</strong></div></div><div class='metric'><div class='donut' style='--value:{verification_progress};--color:#0043ce'><strong>{verification_observed}</strong></div><div class='metric-copy'><span>검증 자료 확보</span><strong>전체 {verification['totalCount']}항목</strong></div></div><div class='metric'><div class='donut' style='--value:{screenshot_progress};--color:#625cff'><strong>{len(runtime_images)}</strong></div><div class='metric-copy'><span>실행 화면 증적</span><strong>캡처 {evidence['screenshotCount']}장</strong></div></div></div>
+<div class='metrics'><div class='metric'><div class='donut' style='--value:{execution_progress};--color:#625cff'><strong>{execution_progress}%</strong></div><div class='metric-copy'><span>실행 진행</span><strong>{execution['completedStepCount']}/{execution['plannedStepCount']}단계</strong></div></div><div class='metric'><div class='donut' style='--value:{diagnosis_value};--color:{diagnosis_color}'><strong>{diagnosis_value}%</strong></div><div class='metric-copy'><span>AI 관측 판정</span><strong>{esc(diagnosis_label)}</strong></div></div><div class='metric'><div class='donut' style='--value:{verification_progress};--color:#0043ce'><strong>{verification_observed}</strong></div><div class='metric-copy'><span>검증 자료 확보</span><strong>전체 {verification['totalCount']}항목</strong></div></div><div class='metric'><div class='donut' style='--value:{screenshot_progress};--color:#625cff'><strong>{len(runtime_images)}</strong></div><div class='metric-copy'><span>실행 화면 증적</span><strong>캡처 {evidence['screenshotCount']}장</strong></div></div></div>
 <h3>전체 실행 진행률</h3><div class='progress-card'><div class='progress-icon'>✓</div><div><div class='progress-top'><strong>{execution_progress}%</strong><span>{esc(technical_label)}</span></div><div class='progress-track' role='progressbar' aria-label='전체 실행 진행률' aria-valuemin='0' aria-valuemax='100' aria-valuenow='{execution_progress}'><div class='progress-fill' style='width:{execution_progress}%'></div></div></div></div>
 <h3>관통 시나리오</h3><div class='journey'><div class='journey-card'><span>A 화면 · 입력</span><strong>{esc(scenario['sourceRoute'])}</strong><small>사용자 입력과 시작 화면</small></div><div class='journey-arrow'>→</div><div class='journey-card'><span>Backend · 요청</span><strong>{esc(scenario['request']['method'])} {esc(scenario['request']['path'])}</strong><small>화면에서 서버로 전달되는 처리</small></div><div class='journey-arrow'>→</div><div class='journey-card'><span>B 화면 · 결과</span><strong>{esc(scenario['destinationRoute'])}</strong><small>이동·안내·값 변경 관측</small></div></div>
 <h3>단계별 관측 분포</h3><div class='status-bar' aria-label='단계별 관측 분포'><span class='status-ok' style='width:{_percent(status_counts.get('ok', 0), observation_total)}%'></span><span class='status-warning' style='width:{_percent(status_counts.get('warning', 0), observation_total)}%'></span><span class='status-skipped' style='width:{_percent(status_counts.get('skipped', 0), observation_total)}%'></span><span class='status-error' style='width:{_percent(status_counts.get('error', 0), observation_total)}%'></span></div><div class='legend'><span>● 정상 관측 <b>{observation_ok}</b></span><span>● 확인 필요 <b>{observation_attention}</b></span><span>● 전체 <b>{observation_total}</b></span></div>
 <h3>자동 관측 요약</h3><p>{esc(execution['outcomeSummary'])}</p><div class='finding-grid'>{attention_steps}</div>
-<h2>2. 기술 검증</h2><div class='evidence-stats'><div class='stat-card'><span>검증 상태</span><strong>{esc(verification['technicalStatus'])}</strong></div><div class='stat-card'><span>일치</span><strong>{verification['matchedCount']}건</strong></div><div class='stat-card'><span>불일치</span><strong>{verification['mismatchCount']}건</strong></div><div class='stat-card'><span>자료 확인 필요</span><strong>{verification['missingCount']}건</strong></div></div><table><thead><tr><th>검증 항목</th><th>결과</th><th>기대값</th><th>관측값</th></tr></thead><tbody>{assertions}</tbody></table>
+<h2>2. AI 관측 진단 및 조치 가이드</h2><section class='diagnosis-card is-{diagnosis_tone}'><header><h3>{esc(diagnosis['headline'])}</h3><span>{esc(diagnosis_label)}</span></header><div class='diagnosis-summary'><div><strong>무슨 문제가 있었나요?</strong><p>{esc(diagnosis['problemSummary'])}</p></div><div><strong>왜 이런 결과가 발생했나요?</strong><p>{esc(diagnosis['causeSummary'])}</p></div></div><h3>관측 근거</h3><ul>{diagnosis_evidence}</ul><h3>조치 제안</h3><ul class='diagnosis-actions'>{diagnosis_actions}</ul><p class='diagnosis-retest'><strong>재검증 조건</strong> · {esc(diagnosis['retestCondition'])}</p></section>
+<h2>3. 기술 검증</h2><div class='evidence-stats'><div class='stat-card'><span>검증 상태</span><strong>{esc(verification['technicalStatus'])}</strong></div><div class='stat-card'><span>일치</span><strong>{verification['matchedCount']}건</strong></div><div class='stat-card'><span>불일치</span><strong>{verification['mismatchCount']}건</strong></div><div class='stat-card'><span>자료 확인 필요</span><strong>{verification['missingCount']}건</strong></div></div><table><thead><tr><th>검증 항목</th><th>결과</th><th>기대값</th><th>관측값</th></tr></thead><tbody>{assertions}</tbody></table>
 <h3>먼저 확인할 내용</h3><ul>{attention}</ul><div class='missing-grid'>{missing}</div>{missing_more}
-<h2>3. 증적 패키지</h2><div class='evidence-stats'><div class='stat-card'><span>패키지 파일</span><strong>{evidence['artifactCount']}건</strong></div><div class='stat-card'><span>시각 증적</span><strong>{visual_evidence_count}장</strong></div><div class='stat-card'><span>시각 증적 구성</span><strong>대표 {len(package_images)} + 단계 {len(runtime_images)}</strong></div><div class='stat-card'><span>파일 무결성</span><strong>{esc(integrity_label)}</strong></div></div>
+<h2>4. 증적 패키지</h2><div class='evidence-stats'><div class='stat-card'><span>패키지 파일</span><strong>{evidence['artifactCount']}건</strong></div><div class='stat-card'><span>시각 증적</span><strong>{visual_evidence_count}장</strong></div><div class='stat-card'><span>시각 증적 구성</span><strong>대표 {len(package_images)} + 단계 {len(runtime_images)}</strong></div><div class='stat-card'><span>파일 무결성</span><strong>{esc(integrity_label)}</strong></div></div>
 <p class='inventory-note'>패키지 파일 {evidence['artifactCount']}건은 PNG뿐 아니라 JSON·화면 구조·Network를 모두 합한 수입니다. 화면으로 보는 증적은 대표 화면 {len(package_images)}장과 단계별 캡처 {len(runtime_images)}장, 총 {visual_evidence_count}장입니다.</p>
 <h3>핵심 화면 증적 {len(package_images)}장 · A 화면 → 입력 완료 → B 결과</h3><div class='stage-gallery'>{package_image_html}</div>
 <h3>단계별 실행 화면 {len(runtime_images)}/{evidence['screenshotCount']}장</h3><p class='capture-note'>모든 실행 캡처를 인쇄 가능한 썸네일로 포함했습니다. 화면을 클릭하면 원본 크기로 확인할 수 있습니다.</p><div class='capture-gallery'>{runtime_image_html}</div>

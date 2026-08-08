@@ -78,7 +78,7 @@ type NodeRuntime = {
     path?: string | null;
     target?: Record<string, unknown> | null;
   };
-  status: "success" | "failure" | "pending" | "unknown";
+  status: "success" | "failure" | "warning" | "pending" | "unknown";
   input: Record<string, unknown>;
   output: Record<string, unknown>;
   errorMessage?: string | null;
@@ -366,6 +366,20 @@ export function FlowCanvas({
     const warn = /실패|없습니다|missing|오류/.test(message);
     return { tone: warn ? "is-warn" : "is-info", text: message };
   }, [message]);
+
+  const runtimeAttention = useMemo(() => {
+    const rows = Object.values(runtimeMap);
+    const failed = rows.find((item) => item.status === "failure");
+    const warning = rows.find((item) => item.status === "warning");
+    const selected = failed || warning;
+    if (!selected) return null;
+    return {
+      tone: failed ? "is-error" : "is-warn",
+      label: failed ? "기대 결과 불일치" : "담당자 확인 필요",
+      detail: selected.errorMessage || "최근 실행의 판정 근거를 이 단계에서 확인해야 합니다.",
+      nodeId: selected.nodeId,
+    };
+  }, [runtimeMap]);
 
   const canvasSize = useMemo(() => {
     if (layout.length === 0) return { w: 800, h: 320 };
@@ -900,6 +914,7 @@ export function FlowCanvas({
         <div className="flow-legend" role="list" aria-label="노드 상태 범례">
           <span className="flow-legend-item is-success" role="listitem">성공 관측</span>
           <span className="flow-legend-item is-failure" role="listitem">실패 관측</span>
+          <span className="flow-legend-item is-warning" role="listitem">확인 필요</span>
           <span className="flow-legend-item is-pending" role="listitem">대기/미확인</span>
           <span className="flow-figma-ref">
             Kit {FIGMA.kitNodeId} · Example {FIGMA.exampleNodeId}
@@ -914,6 +929,26 @@ export function FlowCanvas({
             role={notice.tone === "is-warn" ? "alert" : "status"}
           >
             {notice.text}
+          </div>
+        )}
+
+        {runtimeAttention && (
+          <div
+            className={`flow-runtime-attention ${runtimeAttention.tone}`}
+            data-testid="flow-runtime-attention"
+            role="alert"
+          >
+            <strong>{runtimeAttention.label}</strong>
+            <span>{runtimeAttention.detail}</span>
+            <button
+              type="button"
+              onClick={() => {
+                const node = nodes.find((item) => item.id === runtimeAttention.nodeId);
+                if (node) selectNode(node, node.id);
+              }}
+            >
+              표시된 단계 확인
+            </button>
           </div>
         )}
 
@@ -1888,6 +1923,7 @@ function inferStatus(node: GraphNode): NodeRuntime["status"] {
 function statusKo(status?: string | null) {
   if (status === "success") return "성공";
   if (status === "failure") return "실패";
+  if (status === "warning") return "확인 필요";
   if (status === "pending") return "대기";
   return "미확인";
 }

@@ -183,7 +183,7 @@ class FlowNodeRuntime(BaseModel):
     graphId: str
     method: str | None = None
     operation: dict[str, Any] = Field(default_factory=dict)
-    status: Literal["success", "failure", "pending", "unknown"] = "unknown"
+    status: Literal["success", "failure", "warning", "pending", "unknown"] = "unknown"
     input: dict[str, Any] = Field(default_factory=dict)
     output: dict[str, Any] = Field(default_factory=dict)
     errorMessage: str | None = None

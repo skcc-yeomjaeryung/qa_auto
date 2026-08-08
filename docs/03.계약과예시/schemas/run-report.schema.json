@@ -6,7 +6,7 @@
   "additionalProperties": false,
   "required": [
     "schemaVersion", "reportId", "runId", "title", "project", "scenario",
-    "execution", "trace", "observations", "verification", "evidence", "review",
+    "execution", "trace", "observations", "verification", "evidence", "diagnosis", "review",
     "sourceLineage", "generatedBy", "downloads", "missingData", "missingDataDetails"
   ],
   "properties": {
@@ -21,6 +21,7 @@
     "observations": { "type": "array", "items": { "$ref": "#/$defs/observation" } },
     "verification": { "$ref": "#/$defs/verification" },
     "evidence": { "$ref": "#/$defs/evidence" },
+    "diagnosis": { "$ref": "#/$defs/diagnosis" },
     "review": { "$ref": "#/$defs/review" },
     "sourceLineage": { "type": "array", "items": { "$ref": "#/$defs/lineage" } },
     "generatedBy": { "$ref": "#/$defs/generatedBy" },
@@ -129,6 +130,25 @@
       "properties": {
         "finalDecision": { "const": "PENDING_HUMAN_REVIEW" }, "hitlRequired": { "const": true },
         "checklist": { "$ref": "#/$defs/strings" }, "attentionItems": { "$ref": "#/$defs/strings" }, "guardrail": { "type": "string" }
+      }
+    },
+    "diagnosisAction": {
+      "type": "object", "additionalProperties": false,
+      "required": ["owner", "action", "reason"],
+      "properties": {
+        "owner": { "type": "string" }, "action": { "type": "string" }, "reason": { "type": "string" }
+      }
+    },
+    "diagnosis": {
+      "type": "object", "additionalProperties": false,
+      "required": ["outcome", "headline", "problemSummary", "causeCategory", "causeSummary", "evidence", "actions", "retestCondition", "handoffMessage", "mode", "humanDecisionRequired"],
+      "properties": {
+        "outcome": { "type": "string" }, "headline": { "type": "string" },
+        "problemSummary": { "type": "string" }, "causeCategory": { "type": "string" },
+        "causeSummary": { "type": "string" }, "evidence": { "$ref": "#/$defs/strings" },
+        "actions": { "type": "array", "items": { "$ref": "#/$defs/diagnosisAction" } },
+        "retestCondition": { "type": "string" }, "handoffMessage": { "type": "string" },
+        "mode": { "type": "string" }, "humanDecisionRequired": { "const": true }
       }
     },
     "lineage": {

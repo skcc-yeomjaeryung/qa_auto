@@ -191,7 +191,12 @@ def test_deposit_is_generated_as_one_business_journey(tmp_path: Path) -> None:
     ]
 
     amount = next(item for item in deposit["inputs"] if item["name"] == "amount")
-    assert amount["constraints"] == {"min": "0.01", "max": "500000", "step": "0.01"}
+    assert amount["constraints"] == {
+        "min": "0.01",
+        "max": "500000",
+        "step": "0.01",
+        "htmlType": "number",
+    }
     delta = next(step for step in steps if step["action"] == "verify_numeric_delta")
     history = next(step for step in steps if step["action"] == "verify_collection_change")
     assert delta["expect"] == {
@@ -398,9 +403,10 @@ def test_financial_forms_expand_to_evidenced_case_matrix(tmp_path: Path) -> None
     deposits = [row for row in scenarios if (row.get("request") or {}).get("path") == "/deposit"]
     payments = [row for row in scenarios if (row.get("request") or {}).get("path") == "/payment"]
 
-    assert len(deposits) == 6
-    assert len(payments) == 6
+    assert len(deposits) == 7
+    assert len(payments) == 7
     assert {row.get("caseVariant", {}).get("key") for row in deposits} >= {
+        "invalid_numeric_format",
         "minimum_boundary",
         "below_minimum",
         "required_missing",
@@ -408,6 +414,7 @@ def test_financial_forms_expand_to_evidenced_case_matrix(tmp_path: Path) -> None
         "above_maximum",
     }
     assert {row.get("caseVariant", {}).get("key") for row in payments} >= {
+        "invalid_numeric_format",
         "minimum_boundary",
         "below_minimum",
         "required_missing",
@@ -420,11 +427,19 @@ def test_financial_forms_expand_to_evidenced_case_matrix(tmp_path: Path) -> None
     below_minimum = next(
         row for row in deposits if row.get("caseVariant", {}).get("key") == "below_minimum"
     )
+    invalid_numeric = next(
+        row for row in deposits if row.get("caseVariant", {}).get("key") == "invalid_numeric_format"
+    )
     amount_fill = next(step for step in above_balance["steps"] if step.get("action") == "fill" and step.get("valueFrom") == "inputs.amount")
     assert amount_fill["valueStrategy"] == "observed_balance_plus_step"
     assert above_balance["steps"][-1]["action"] == "assert_invalid"
     assert not any(step.get("destructive") for step in above_balance["steps"])
     assert not any(step.get("destructive") for step in below_minimum["steps"])
+    assert invalid_numeric["inputDefaults"]["amount"] == "한글입력"
+    assert invalid_numeric["scenarioAugmentation"]["mode"] == "grounded_risk_prediction"
+    assert invalid_numeric["scenarioAugmentation"]["humanReviewRequired"] is True
+    assert "frontend_constraint:type=number" in invalid_numeric["scenarioAugmentation"]["evidenceBasis"]
+    assert invalid_numeric["coverageMatrix"]["riskPredictions"][0]["key"] == "invalid_numeric_format"
     assert "request_accepted" not in {
         item.get("check") for item in below_minimum.get("verdictCriteria", [])
     }

@@ -18,7 +18,8 @@ GRAPH_ID = "IG-flowruntime-test"
 def fresh_store():
     bootstrap_runtime()
     store = get_platform_store()
-    store._graphs.clear()
+    for attr in ("_graphs", "_scenarios", "_runs"):
+        getattr(store, attr).clear()
     if hasattr(store, "_flow_node_runtime"):
         store._flow_node_runtime.clear()
     yield
@@ -169,3 +170,63 @@ def test_scoped_flow_runtime_uses_scenario_steps_and_latest_observation() -> Non
     )
     assert patched.status_code == 200, patched.text
     assert patched.json()["input"]["value"] == "45"
+
+
+def test_scoped_flow_runtime_propagates_failed_criterion_to_red_node() -> None:
+    store = get_platform_store()
+    _seed_graph_with_list_inputs()
+    scenario_id = "SCN-flow-invalid-format"
+    store.save_scenario(
+        ScenarioSummary(
+            scenarioId=scenario_id,
+            projectId="PRJ-flowruntime",
+            graphId=GRAPH_ID,
+            name="입금 금액 문자 입력 거부",
+            result={
+                "steps": [
+                    {"id": "S1", "action": "fill", "title": "문자 입력", "valueFrom": "inputs.amount"},
+                    {
+                        "id": "S2",
+                        "action": "assert_invalid",
+                        "title": "숫자 형식 검증",
+                        "criterionId": "C-invalid-format",
+                        "expect": {"valid": False},
+                    },
+                ]
+            },
+        )
+    )
+    store.save_run(
+        RunSummary(
+            runId="RUN-flow-invalid-format",
+            scenarioId=scenario_id,
+            projectId="PRJ-flowruntime",
+            status="AUTO_FAILED",
+            steps=[
+                RunStepSummary(stepId="S1", action="fill", status="ok", observationSummary="한글입력 입력"),
+                RunStepSummary(stepId="S2", action="assert_invalid", status="warning", observationSummary="거부 상태 미관측"),
+            ],
+            result={
+                "verdict": {
+                    "verdict": "expected_not_met",
+                    "criteriaResults": [
+                        {
+                            "id": "C-invalid-format",
+                            "check": "native_constraint_rejection",
+                            "expected": "숫자 형식 외 문자 입력은 요청 전에 거부된다",
+                            "result": "not_met",
+                            "observed": "브라우저 입력 제약의 거부 상태를 확인하지 못했습니다",
+                        }
+                    ],
+                }
+            },
+        )
+    )
+
+    scoped_id = f"{GRAPH_ID}::{scenario_id}"
+    response = client.get(f"/api/console/flows/{scoped_id}/nodes")
+    assert response.status_code == 200, response.text
+    by_id = {item["nodeId"]: item for item in response.json()}
+    assert by_id["scenario-step-s1"]["status"] == "success"
+    assert by_id["scenario-step-s2"]["status"] == "failure"
+    assert "숫자만 입력해야 하는 필드" in by_id["scenario-step-s2"]["errorMessage"]

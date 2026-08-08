@@ -84,6 +84,19 @@ type RunReport = {
       stage?: string | null;
     }>;
   };
+  diagnosis: {
+    outcome: string;
+    headline: string;
+    problemSummary: string;
+    causeCategory: string;
+    causeSummary: string;
+    evidence: string[];
+    actions: Array<{ owner: string; action: string; reason: string }>;
+    retestCondition: string;
+    handoffMessage: string;
+    mode: string;
+    humanDecisionRequired: true;
+  };
   review: {
     finalDecision: "PENDING_HUMAN_REVIEW";
     hitlRequired: true;
@@ -237,9 +250,9 @@ export function RunReportDrawer({
 
               <section className="report-overview-grid" aria-label="리포트 핵심 상태">
                 <div><span>기술 실행</span><strong>{technicalLabel(report.execution.technicalStatus)}</strong></div>
+                <div className={`is-${report.diagnosis.outcome}`}><span>AI 관측 판정</span><strong>{diagnosisLabel(report.diagnosis.outcome)}</strong></div>
                 <div><span>기술 검증</span><strong>{verificationLabel(report.verification.technicalStatus)}</strong></div>
                 <div><span>증적 무결성</span><strong>{integrityLabel(report.evidence.integrityStatus)}</strong></div>
-                <div><span>생성 시각</span><strong>{formatDateTime(report.generatedBy.generatedAt)}</strong></div>
               </section>
 
               <section className="report-route-card">
@@ -250,6 +263,26 @@ export function RunReportDrawer({
                   <strong>{report.scenario.destinationRoute}</strong>
                 </div>
                 <p>{report.execution.outcomeSummary}</p>
+              </section>
+
+              <section className={`report-diagnosis is-${report.diagnosis.outcome}`} data-testid="report-diagnosis">
+                <div className="section-heading-row">
+                  <div><span className="panel-kicker">REPORT AGENT · 관측 근거 기반</span><h3 className="section-title">{report.diagnosis.headline}</h3></div>
+                  <span className={`status-badge ${report.diagnosis.outcome === "failure" ? "status-danger" : report.diagnosis.outcome === "success" ? "status-success" : "status-warning"}`}>
+                    {diagnosisLabel(report.diagnosis.outcome)}
+                  </span>
+                </div>
+                <div className="report-diagnosis-grid">
+                  <div><strong>무슨 문제가 있었나요?</strong><p>{report.diagnosis.problemSummary}</p></div>
+                  <div><strong>왜 이런 결과가 발생했나요?</strong><p>{report.diagnosis.causeSummary}</p></div>
+                </div>
+                <div className="report-diagnosis-actions">
+                  <strong>조치 제안</strong>
+                  {report.diagnosis.actions.length ? report.diagnosis.actions.map((item, index) => (
+                    <article key={`${item.owner}-${index}`}><span>{item.owner}</span><p>{item.action}</p><small>{item.reason}</small></article>
+                  )) : <p>실행 단계와 증적을 확인한 뒤 같은 조건으로 재검증해 주세요.</p>}
+                </div>
+                <p className="report-retest"><strong>재검증 조건</strong>{report.diagnosis.retestCondition}</p>
               </section>
 
               <section className="report-review-section">
@@ -334,6 +367,7 @@ const technicalLabel = (value: string) => ({ WAITING_FOR_REVIEW: "실행 완료"
 const verificationLabel = (value: string) => ({ TECHNICALLY_MATCHED: "기술 일치", TECHNICAL_MISMATCH: "기술 불일치", PARTIAL: "근거 일부 누락", BLOCKED: "검증 차단" }[value] || value);
 const integrityLabel = (value: string) => ({ complete: "해시 검증 완료", partial: "일부 누락", corrupted: "무결성 확인 필요" }[value] || value);
 const assertionLabel = (value: string) => ({ MATCH: "일치", MISMATCH: "불일치", MISSING_DATA: "근거 누락", REVIEW_REQUIRED: "담당자 확인" }[value] || value);
+const diagnosisLabel = (value: string) => ({ success: "성공 기준 관측", failure: "기대 결과 불일치", undetermined: "담당자 확인 필요" }[value] || value);
 const fieldLabel = (value: string) => ({ httpStatus: "서버 응답 상태", route: "결과 화면 경로" }[value] || value);
 const displayEvidenceValue = (value: string) => value === "missing_data" ? "확인 자료 없음" : value;
 const actionLabel = (value: string) => ({ navigate: "화면 이동", click: "클릭", fill: "값 입력", assert_visible: "표시 확인", assert_text: "문구 확인", wait_for_response: "응답 확인", set_headers: "추적 준비", select: "항목 선택", verify_response: "응답 검증" }[value] || value || "실행 단계");

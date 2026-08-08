@@ -206,8 +206,9 @@ def test_report_agent_generates_schema_complete_report_and_html():
     assert "최종 판정은 담당자 검토" in html
     assert "회원가입 후 홈 화면 이동 확인" in html
     assert "1. 실행 결과 한눈에 보기" in html
-    assert "2. 기술 검증" in html
-    assert "3. 증적 패키지" in html
+    assert "2. AI 관측 진단 및 조치 가이드" in html
+    assert "3. 기술 검증" in html
+    assert "4. 증적 패키지" in html
     assert "실행 결과 한눈에 보기" in html
     assert "전체 실행 진행률" in html
     assert "단계별 실행 화면 2/2장" in html
@@ -239,6 +240,102 @@ def test_report_html_renders_visual_evidence_and_complete_inventory_without_raw_
     for index in range(1, 17):
         assert f"ART-report-{index:02d}" in html
         assert f"details/evidence-{index:02d}.json" in html
+
+
+def test_report_uses_same_failed_verdict_and_actionable_diagnosis_as_run_history():
+    run_id = "RUN-report-invalid-format"
+    _seed(run_id)
+    store = get_platform_store()
+    current = store.get_run(run_id)
+    assert current is not None
+    store.save_run(
+        current.model_copy(
+            update={
+                "status": "AUTO_FAILED",
+                "outcomeKind": "business_error",
+                "result": {
+                    "verdict": {
+                        "verdict": "expected_not_met",
+                        "criteriaResults": [
+                            {
+                                "id": "C-invalid-format",
+                                "check": "native_constraint_rejection",
+                                "expected": "숫자 형식 외 문자 입력은 업무 요청 전에 거부된다",
+                                "result": "not_met",
+                                "observed": "브라우저 입력 제약의 거부 상태를 확인하지 못했습니다",
+                            }
+                        ],
+                    }
+                },
+            }
+        )
+    )
+
+    service = RunReportService(store)
+    report = service.generate(run_id, force=True)
+
+    assert report.execution.technicalStatus == "AUTO_FAILED"
+    assert report.diagnosis.outcome == "failure"
+    assert report.diagnosis.causeCategory == "client_validation_missing"
+    assert "숫자만 입력해야 하는 필드" in report.diagnosis.problemSummary
+    assert "type=number" in report.diagnosis.actions[0].action
+    html = service.download_path(run_id, "html").read_text(encoding="utf-8")
+    assert "기대 결과 불일치" in html
+    assert "AI 관측 진단 및 조치 가이드" in html
+    assert "숫자만 입력해야 하는 필드" in html
+
+
+def test_report_renders_execution_policy_block_as_attention_not_product_failure():
+    run_id = "RUN-report-policy-attention"
+    _seed(run_id)
+    store = get_platform_store()
+    current = store.get_run(run_id)
+    assert current is not None
+    store.save_run(
+        current.model_copy(
+            update={
+                "status": "AUTO_FAILED",
+                "outcomeKind": "business_error",
+                "missingData": ["submit_blocked_destructive"],
+                "result": {
+                    "missing_data": ["submit_blocked_destructive"],
+                    "verdict": {
+                        "verdict": "expected_not_met",
+                        "criteriaResults": [
+                            {
+                                "id": "C-response",
+                                "check": "request_accepted",
+                                "expected": "업무 요청 응답이 관측된다",
+                                "result": "undetermined",
+                                "observed": "데이터를 만드는 동작이라 자동 실행을 차단했습니다",
+                            }
+                        ],
+                    },
+                    "steps": [
+                        {
+                            "stepId": "S8",
+                            "action": "click",
+                            "status": "skipped",
+                            "observationSummary": "데이터를 생성할 수 있어 자동 클릭을 차단했습니다",
+                            "missingData": ["submit_blocked_destructive"],
+                        }
+                    ],
+                },
+            }
+        )
+    )
+
+    service = RunReportService(store)
+    report = service.generate(run_id, force=True)
+
+    assert report.execution.technicalStatus == "AUTO_FAILED"
+    assert report.diagnosis.outcome == "undetermined"
+    assert report.diagnosis.causeCategory == "destructive_policy_blocked"
+    assert "송금" not in report.diagnosis.problemSummary
+    assert "1회 테스트를 명시적으로 승인" in report.diagnosis.actions[0].action
+    html = service.download_path(run_id, "html").read_text(encoding="utf-8")
+    assert "담당자 확인 필요" in html
+    assert "대상 서비스 오류가 아니라 실행 정책" in html
 
 
 def test_report_api_get_and_download_contract():

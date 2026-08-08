@@ -13,6 +13,7 @@ from app.schemas.run_report import RunReport
 from app.services.binding_validation import BindingValidationService
 from app.services.evidence_package import EvidencePackageService
 from app.services.repository_store import InMemoryPlatformStore
+from app.services.run_service import _normalize_derived_outcome
 from app.skills.run_report.script.generate_report import write_artifacts
 
 
@@ -48,6 +49,9 @@ class RunReportService:
         run = self.store.get_run(run_id)
         if not run:
             raise LookupError(f"run not found: {run_id}")
+        # Scenario detail, run history, graph, and report must all project the
+        # same conservative verdict from the immutable execution evidence.
+        run = _normalize_derived_outcome(run)
         scenario = self.store.get_scenario(run.scenarioId)
         if not scenario:
             raise LookupError(f"scenario not found: {run.scenarioId}")

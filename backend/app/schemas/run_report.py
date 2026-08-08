@@ -126,6 +126,26 @@ class ReportReview(ContractModel):
     guardrail: str
 
 
+class ReportDiagnosisAction(ContractModel):
+    owner: str
+    action: str
+    reason: str
+
+
+class ReportDiagnosis(ContractModel):
+    outcome: str
+    headline: str
+    problemSummary: str
+    causeCategory: str
+    causeSummary: str
+    evidence: list[str] = Field(default_factory=list)
+    actions: list[ReportDiagnosisAction] = Field(default_factory=list)
+    retestCondition: str
+    handoffMessage: str
+    mode: str
+    humanDecisionRequired: Literal[True] = True
+
+
 class ReportLineage(ContractModel):
     sourceType: str
     sourceId: str
@@ -158,6 +178,7 @@ class RunReport(ContractModel):
     observations: list[ReportStepObservation] = Field(default_factory=list)
     verification: ReportVerification
     evidence: ReportEvidence
+    diagnosis: ReportDiagnosis
     review: ReportReview
     sourceLineage: list[ReportLineage] = Field(default_factory=list)
     generatedBy: ReportGeneratedBy

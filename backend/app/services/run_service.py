@@ -848,7 +848,13 @@ def _classify_run_outcome(status: str, result: dict) -> tuple[str, str]:
 def _diagnosis_owner(kind: str) -> str:
     if kind in {"server_error", "method_not_allowed", "not_found"}:
         return "Backend 개발 담당"
-    if kind in {"element_missing", "no_state_change"}:
+    if kind in {
+        "element_missing",
+        "no_state_change",
+        "client_validation_missing",
+        "required_validation_missing",
+        "boundary_validation_missing",
+    }:
         return "Frontend 개발·QA 자동화 담당"
     if kind == "session_missing":
         return "실행환경·QA 담당"
@@ -857,6 +863,115 @@ def _diagnosis_owner(kind: str) -> str:
     if kind == "input_precondition_invalid":
         return "QA 테스트 데이터·실행환경 담당"
     return "개발·QA 담당"
+
+
+def _grounded_failure_guidance(
+    criteria: list[dict[str, Any]],
+    blockers: list[dict[str, Any]],
+) -> dict[str, Any] | None:
+    """Explain common product failures from the recorded criterion itself.
+
+    This deliberately avoids guessing an implementation defect.  It turns the
+    expected/observed pair into an actionable review target and keeps the
+    proposed fix phrased as a validation point to inspect.
+    """
+    failed = next(
+        (
+            item
+            for item in criteria
+            if str(item.get("result") or "") in {"not_met", "undetermined"}
+        ),
+        None,
+    )
+    blocker = blockers[0] if blockers else {}
+    check = str((failed or {}).get("check") or blocker.get("kind") or "").strip()
+    expected = str((failed or {}).get("expected") or "").strip()
+    observed = str((failed or {}).get("observed") or blocker.get("detail") or "").strip()
+    combined = f"{check} {expected} {observed}".lower()
+    evidence_pair = " · ".join(
+        part for part in (f"기대: {expected}" if expected else "", f"관측: {observed}" if observed else "") if part
+    )
+
+    if check == "native_constraint_rejection" or any(
+        token in combined for token in ("입력 제약", "checkvalidity", "validity")
+    ):
+        required = any(token in combined for token in ("필수", "required", "누락", "비어"))
+        boundary = any(token in combined for token in ("최소", "최대", "min", "max", "경계", "초과", "미만"))
+        numeric = any(token in combined for token in ("숫자", "number", "numeric", "금액"))
+        cause_kind = (
+            "required_validation_missing"
+            if required
+            else "boundary_validation_missing"
+            if boundary
+            else "client_validation_missing"
+        )
+        if numeric:
+            problem = (
+                "숫자만 입력해야 하는 필드가 숫자가 아닌 입력을 거부하지 못했습니다. "
+                f"{evidence_pair or '브라우저 유효성 관측에서 거부 상태를 확인하지 못했습니다.'}"
+            )
+            cause = (
+                "숫자 필드의 DOM type·pattern·inputMode 또는 제출 전 validation이 분석된 입력 제약과 "
+                "같이 적용되는지 확인해야 합니다. 현재 증적에서는 잘못된 값의 거부 상태가 관측되지 않았습니다."
+            )
+            action = (
+                "해당 필드의 type=number·pattern과 제출 핸들러 validation을 확인하고, 숫자가 아닌 값은 "
+                "업무 요청 전에 오류 안내와 함께 차단되도록 보완하세요."
+            )
+            retest = "같은 숫자 외 입력으로 재실행해 필드 오류 표시와 Network 요청 미전송을 함께 확인하세요."
+        elif required:
+            problem = f"필수 입력이 비어 있는데도 화면 제약이 제출을 막지 못했습니다. {evidence_pair}".strip()
+            cause = "required 속성과 제출 전 필수값 validation이 실제 입력 컨트롤과 같은 필드에 연결됐는지 확인해야 합니다."
+            action = "필수 필드의 required·스키마 규칙·제출 핸들러 검증을 일치시키고, 빈 값이면 요청 전에 오류를 표시하도록 보완하세요."
+            retest = "동일 필드를 비운 채 재실행해 오류 표시와 Network 요청 미전송을 함께 확인하세요."
+        elif boundary:
+            problem = f"분석된 최소·최대 경계 밖의 값을 화면이 거부하지 못했습니다. {evidence_pair}".strip()
+            cause = "DOM min/max/step과 제출 전 경계값 validation이 분석된 제약과 같이 적용되는지 확인해야 합니다."
+            action = "해당 필드의 min/max/step과 서버 DTO 경계 규칙을 대조하고, 범위 밖 값은 요청 전에 차단하도록 보완하세요."
+            retest = "같은 경계 밖 입력으로 재실행해 오류 표시·요청 미전송·경계값 정상 허용을 함께 확인하세요."
+        else:
+            problem = f"분석된 형식 제약과 달리 유효하지 않은 입력이 화면에서 허용됐습니다. {evidence_pair}".strip()
+            cause = "DOM pattern/type과 제출 전 validation이 분석된 입력 제약에 맞게 적용되는지 확인해야 합니다."
+            action = "필드 형식 제약과 제출 전 validation을 대조하고, 잘못된 값은 오류 안내와 함께 요청 전에 차단하도록 보완하세요."
+            retest = "동일한 유효하지 않은 값으로 재실행해 오류 표시와 Network 요청 미전송을 함께 확인하세요."
+        return {
+            "causeCategory": cause_kind,
+            "problemSummary": problem,
+            "causeSummary": cause,
+            "action": action,
+            "retestCondition": retest,
+        }
+
+    known = {
+        "element_missing": (
+            "화면에서 기대한 컨트롤 또는 결과 요소를 찾지 못했습니다.",
+            "분석된 selector·접근성 이름과 현재 DOM 구조가 달라졌거나 조건부 렌더링이 적용됐는지 확인해야 합니다.",
+            "해당 화면의 DOM·접근성 이름·조건부 렌더링을 확인하고 분석 selector를 최신 코드 근거로 갱신하세요.",
+            "같은 화면 상태에서 재실행해 대상 요소와 캡처 증적이 함께 관측되는지 확인하세요.",
+        ),
+        "no_state_change": (
+            "업무 요청 뒤 기대한 화면 값 또는 목록 변화가 관측되지 않았습니다.",
+            "응답 데이터가 화면 상태에 바인딩되는 경로, 캐시 갱신, 후속 조회가 실행됐는지 확인해야 합니다.",
+            "API 응답과 화면 상태 갱신 코드를 대조하고 잔액·목록·완료 안내가 같은 요청 결과로 갱신되도록 보완하세요.",
+            "동일 입력으로 재실행해 요청 응답과 전후 화면 값 변화가 같은 실행 ID로 연결되는지 확인하세요.",
+        ),
+        "not_found": (
+            "분석된 화면 또는 API 경로가 실행 서버에서 Not Found로 관측됐습니다.",
+            "분석 시점의 route·endpoint와 배포된 실행환경의 라우팅 버전이 같은지 확인해야 합니다.",
+            "Frontend route와 Backend endpoint 배포 상태·base URL·버전을 대조한 뒤 실제 화면 트리거 경로를 갱신하세요.",
+            "같은 실행환경에서 화면 트리거를 통해 재실행하고 404가 사라졌는지 확인하세요.",
+        ),
+    }
+    if check in known:
+        problem, cause, action, retest = known[check]
+        return {
+            "causeCategory": check,
+            "problemSummary": f"{problem} {evidence_pair}".strip(),
+            "causeSummary": cause,
+            "action": action,
+            "retestCondition": retest,
+        }
+    return None
 
 
 def _build_run_diagnosis(status: str, result: dict[str, Any]) -> dict[str, Any]:
@@ -897,6 +1012,10 @@ def _build_run_diagnosis(status: str, result: dict[str, Any]) -> dict[str, Any]:
     input_precondition_invalid = (
         input_precondition_step is not None or "input_precondition_invalid" in missing_data
     )
+    if input_precondition_invalid:
+        outcome, headline = "undetermined", "실행환경 확인 필요"
+    elif policy_blocked:
+        outcome, headline = "undetermined", "실행 승인 필요"
     cause_kind = (
         "input_precondition_invalid"
         if input_precondition_invalid
@@ -932,11 +1051,20 @@ def _build_run_diagnosis(status: str, result: dict[str, Any]) -> dict[str, Any]:
     problem_summary = (
         "현재 테스트 계정 상태가 입력 제약을 충족하지 않아 제출 요청이 전송되지 않았습니다. 후속 성공 안내·잔액·거래내역 미관측은 하나의 선행조건 문제에서 파생된 결과입니다."
         if input_precondition_invalid
-        else "송금 제출이 실행되지 않아 성공 안내, 잔액 감소, 거래내역 추가 결과를 확인하지 못했습니다."
+        else "업무 제출이 실행되지 않아 완료 안내, 화면 값 변화, 결과 목록 추가를 확인하지 못했습니다."
         if policy_blocked
         else " · ".join(item for item in failed_criteria[:3] if item)
         or cause_summary
     )
+    specific_guidance = (
+        _grounded_failure_guidance(criteria, blockers)
+        if outcome == "failure" and not input_precondition_invalid and not policy_blocked
+        else None
+    )
+    if specific_guidance:
+        cause_kind = str(specific_guidance["causeCategory"])
+        problem_summary = str(specific_guidance["problemSummary"])
+        cause_summary = str(specific_guidance["causeSummary"])
     evidence = [
         str(item.get("observed"))
         for item in criteria
@@ -968,6 +1096,14 @@ def _build_run_diagnosis(status: str, result: dict[str, Any]) -> dict[str, Any]:
                 ),
             }
         )
+    elif specific_guidance:
+        actions.append(
+            {
+                "owner": _diagnosis_owner(cause_kind),
+                "action": str(specific_guidance["action"]),
+                "reason": cause_summary,
+            }
+        )
     for blocker in blockers:
         action = str(blocker.get("suggestedFix") or "").strip()
         if action:
@@ -989,8 +1125,10 @@ def _build_run_diagnosis(status: str, result: dict[str, Any]) -> dict[str, Any]:
     retest = (
         "잔액이 있는 테스트 계정을 준비한 뒤 입력값이 화면의 최소·최대 허용 범위 안인지 확인하고, 성공 안내·잔액 감소·신규 거래 행을 함께 재관측하세요"
         if input_precondition_invalid
-        else "현재 잔액이 0보다 큰 테스트 계정에서 송금 금액을 다시 계산하고, 데이터 변경 1회 실행을 명시 승인한 뒤 성공 안내·잔액 감소·신규 거래 행을 함께 확인하세요"
+        else "현재 화면의 허용 입력 범위를 확인하고 데이터 변경 1회 실행을 명시 승인한 뒤 완료 안내·화면 값 변화·신규 결과 행을 함께 확인하세요"
         if policy_blocked
+        else str(specific_guidance["retestCondition"])
+        if specific_guidance
         else
         "조치 후 같은 입력과 실행환경으로 재실행해 기대 기준과 실제 관측이 모두 일치하는지 확인하세요"
         if outcome == "failure"
