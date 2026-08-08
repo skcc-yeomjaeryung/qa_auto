@@ -96,7 +96,22 @@ def _seed(run_id: str = "RUN-report-agent", *, artifact_count: int = 1) -> None:
             ],
             outcomeKind="success",
             outcomeSummary="기대 경로 /home을 관측했습니다.",
-            result={"agentTraceId": "PLAN-browser-run"},
+            result={
+                "agentTraceId": "PLAN-browser-run",
+                "verdict": {
+                    "verdict": "expected_met",
+                    "reason": "기대 경로 /home을 관측했습니다.",
+                    "criteriaResults": [
+                        {
+                            "id": "C-route",
+                            "check": "destination_route",
+                            "expected": "/home",
+                            "result": "met",
+                            "observed": "/home",
+                        }
+                    ],
+                },
+            },
             createdAt=_now(-2),
             updatedAt=_now(),
         )
@@ -190,6 +205,7 @@ def test_report_agent_generates_schema_complete_report_and_html():
     assert report.verification.matchedCount == 1
     assert report.scenario.request.path == "/api/signup"
     assert report.evidence.artifactCount == 1
+    assert report.diagnosis.outcome == "success"
     assert report.missingDataDetails[0].label == "서버 응답 내용을 수집하지 못했습니다"
 
     body = report.model_dump(mode="json", by_alias=True)
@@ -206,7 +222,10 @@ def test_report_agent_generates_schema_complete_report_and_html():
     assert "최종 판정은 담당자 검토" in html
     assert "회원가입 후 홈 화면 이동 확인" in html
     assert "1. 실행 결과 한눈에 보기" in html
-    assert "2. AI 관측 진단 및 조치 가이드" in html
+    assert "2. AI 관측 결과 및 최종 검토 가이드" in html
+    assert "무엇이 정상 관측됐나요?" in html
+    assert "어떤 근거로 성공을 확인했나요?" in html
+    assert "무슨 문제가 있었나요?" not in html
     assert "3. 기술 검증" in html
     assert "4. 증적 패키지" in html
     assert "실행 결과 한눈에 보기" in html

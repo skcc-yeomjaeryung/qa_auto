@@ -11,6 +11,7 @@ import { ProgressGlyph } from "./ProgressBar";
 import { apiFetch } from "../lib/apiClient";
 import { humanizeMissingEvidence } from "../lib/evidenceLabels";
 import { AssistantGuide } from "./AssistantGuide";
+import { getDiagnosisCopy } from "../lib/diagnosisCopy";
 
 const API = process.env.NEXT_PUBLIC_CONTROL_PLANE_URL ?? "http://127.0.0.1:8000";
 
@@ -122,6 +123,7 @@ export function RunEvidenceDrawer({
 
   const verdict = run?.result?.verdict;
   const diagnosis = run?.result?.runDiagnosis;
+  const diagnosisText = getDiagnosisCopy(diagnosis?.outcome);
   const criteria = verdict?.criteriaResults ?? verdict?.criteria ?? [];
   const blockers = verdict?.blockingIssues ?? [];
   const reviewItems = useMemo(() => {
@@ -220,7 +222,7 @@ export function RunEvidenceDrawer({
                 <section className={`run-diagnosis-card is-${diagnosis.outcome || "undetermined"}`} data-testid="run-diagnosis">
                   <div className="section-heading-row">
                     <div>
-                      <span className="panel-kicker">실패 원인과 후속 조치</span>
+                      <span className="panel-kicker">{diagnosisText.sectionKicker}</span>
                       <h3 className="section-title">{diagnosis.headline || "실행 결과 분석"}</h3>
                     </div>
                     <span className="status-badge status-info">
@@ -230,16 +232,16 @@ export function RunEvidenceDrawer({
                   <div className="run-troubleshoot-grid">
                     <article>
                       <span>1</span>
-                      <div><strong>무슨 문제가 있었나요?</strong><p>{diagnosis.problemSummary || diagnosis.headline || "관측된 문제 요약이 없습니다"}</p></div>
+                      <div><strong>{diagnosisText.primaryQuestion}</strong><p>{diagnosis.problemSummary || diagnosis.headline || "관측된 결과 요약이 없습니다"}</p></div>
                     </article>
                     <article>
                       <span>2</span>
-                      <div><strong>왜 이런 오류가 발생했나요?</strong><p>{diagnosis.causeSummary || "관측된 원인 요약이 없습니다"}</p></div>
+                      <div><strong>{diagnosisText.causeQuestion}</strong><p>{diagnosis.causeSummary || "관측된 근거 요약이 없습니다"}</p></div>
                     </article>
                     <article>
                       <span>3</span>
                       <div>
-                        <strong>어떻게 해결하나요?</strong>
+                        <strong>{diagnosisText.actionTitle}</strong>
                         {(diagnosis.actions ?? []).length > 0 ? (
                           <ol className="run-action-list">
                             {(diagnosis.actions ?? []).map((item, index) => (
@@ -252,16 +254,16 @@ export function RunEvidenceDrawer({
                               </li>
                             ))}
                           </ol>
-                        ) : <p>실행 단계와 증적을 개발·QA 담당자에게 전달해 조치 내용을 확인하세요.</p>}
+                        ) : <p>{diagnosisText.emptyAction}</p>}
                       </div>
                     </article>
                   </div>
                   {diagnosis.retestCondition && (
-                    <p className="run-retest-condition"><strong>재검증 조건</strong>{diagnosis.retestCondition}</p>
+                    <p className="run-retest-condition"><strong>{diagnosisText.retestLabel}</strong>{diagnosis.retestCondition}</p>
                   )}
                   {diagnosis.handoffMessage && (
                     <blockquote className="run-handoff-message">
-                      <strong>담당자 전달문</strong>
+                      <strong>{diagnosisText.handoffLabel}</strong>
                       <p>{diagnosis.handoffMessage}</p>
                     </blockquote>
                   )}
@@ -271,8 +273,8 @@ export function RunEvidenceDrawer({
               <section className="run-review-targets" data-testid="run-review-targets">
                 <div className="section-heading-row">
                   <div>
-                    <h3 className="section-title">담당자가 확인할 대상</h3>
-                    <p className="muted">오류·기대 불충족·근거 부족을 먼저 확인합니다.</p>
+                    <h3 className="section-title">{diagnosisText.reviewTitle}</h3>
+                    <p className="muted">{diagnosisText.reviewHint}</p>
                   </div>
                   <span className="status-badge status-info">{reviewItems.length}건</span>
                 </div>

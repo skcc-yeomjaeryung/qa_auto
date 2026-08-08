@@ -13,6 +13,7 @@ import { Breadcrumbs } from "../../../components/Breadcrumbs";
 import { formatDateTime } from "../../../lib/datetime";
 import { BIND_SOURCE_LABEL } from "../../../lib/evidenceLabels";
 import { apiFetch } from "../../../lib/apiClient";
+import { getDiagnosisCopy } from "../../../lib/diagnosisCopy";
 
 export default function RunDetailPage() {
   const params = useParams<{ runId: string }>();
@@ -32,6 +33,7 @@ export default function RunDetailPage() {
   const narrative = useMemo(() => narrateRunSteps(run?.steps || []), [run]);
   const diagnosis = run?.result?.runDiagnosis;
   const attentionRequired = diagnosis?.outcome === "undetermined";
+  const diagnosisText = getDiagnosisCopy(diagnosis?.outcome);
 
   return (
     <PageShell
@@ -98,7 +100,7 @@ export default function RunDetailPage() {
               >
                 <div className="section-heading-row">
                   <div>
-                    <span className="panel-kicker">결과 원인·조치</span>
+                    <span className="panel-kicker">{diagnosisText.sectionKicker}</span>
                     <h3 className="section-title">{run.result.runDiagnosis.headline || "실행 결과 분석"}</h3>
                   </div>
                   <span className="status-badge status-info">
@@ -106,12 +108,12 @@ export default function RunDetailPage() {
                   </span>
                 </div>
                 <div className="run-diagnosis-cause">
-                  <strong>왜 이런 결과가 나왔나요?</strong>
-                  <p>{run.result.runDiagnosis.causeSummary || "관측된 원인 요약이 없습니다"}</p>
+                  <strong>{diagnosisText.causeQuestion}</strong>
+                  <p>{run.result.runDiagnosis.causeSummary || "관측된 근거 요약이 없습니다"}</p>
                 </div>
                 {Array.isArray(run.result.runDiagnosis.evidence) && run.result.runDiagnosis.evidence.length > 0 && (
                   <div className="run-diagnosis-evidence">
-                    <strong>개발자에게 제시할 근거</strong>
+                    <strong>{diagnosis?.outcome === "success" ? "최종 검토 근거" : "개발·QA 담당자에게 제시할 근거"}</strong>
                     <ul>
                       {run.result.runDiagnosis.evidence.map((item: string, index: number) => (
                         <li key={`${item}-${index}`}>{item}</li>
@@ -135,12 +137,12 @@ export default function RunDetailPage() {
                 )}
                 {run.result.runDiagnosis.retestCondition && (
                   <p className="run-retest-condition">
-                    <strong>재검증 조건</strong>{run.result.runDiagnosis.retestCondition}
+                    <strong>{diagnosisText.retestLabel}</strong>{run.result.runDiagnosis.retestCondition}
                   </p>
                 )}
                 {run.result.runDiagnosis.handoffMessage && (
                   <blockquote className="run-handoff-message">
-                    <strong>담당자 전달문</strong>
+                    <strong>{diagnosisText.handoffLabel}</strong>
                     <p>{run.result.runDiagnosis.handoffMessage}</p>
                   </blockquote>
                 )}

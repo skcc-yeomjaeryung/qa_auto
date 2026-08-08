@@ -179,7 +179,16 @@ def build_report(source: dict[str, Any]) -> dict[str, Any]:
         if isinstance(item, dict) and item.get("action")
     ]
     cause_category = _text(raw_diagnosis.get("causeCategory") or "unknown")
-    raw_diagnosis_outcome = _text(raw_diagnosis.get("outcome") or "undetermined")
+    raw_diagnosis_outcome = _text(raw_diagnosis.get("outcome"))
+    if raw_diagnosis_outcome not in {"success", "failure", "undetermined"}:
+        run_outcome = _text(run.get("outcomeKind")).lower()
+        raw_diagnosis_outcome = (
+            "success"
+            if run_outcome == "success"
+            else "failure"
+            if run_outcome in {"failure", "fe_error", "be_error", "business_error"}
+            else "undetermined"
+        )
     diagnosis_outcome = (
         "undetermined"
         if cause_category in {"destructive_policy_blocked", "input_precondition_invalid"}
@@ -616,6 +625,32 @@ def render_report_html(report: dict[str, Any]) -> str:
         "failure": "기대 결과 불일치",
         "undetermined": "담당자 확인 필요",
     }.get(diagnosis_outcome, diagnosis.get("headline") or diagnosis_outcome)
+    diagnosis_copy = {
+        "success": {
+            "section": "AI 관측 결과 및 최종 검토 가이드",
+            "problem": "무엇이 정상 관측됐나요?",
+            "cause": "어떤 근거로 성공을 확인했나요?",
+            "action": "담당자는 무엇을 확인하나요?",
+            "retest": "최종 검토 조건",
+            "fallback": "자동 관측 근거와 증적을 확인한 뒤 최종 결과를 판정하세요.",
+        },
+        "failure": {
+            "section": "AI 관측 진단 및 조치 가이드",
+            "problem": "무슨 문제가 있었나요?",
+            "cause": "왜 이런 결과가 발생했나요?",
+            "action": "조치 제안",
+            "retest": "재검증 조건",
+            "fallback": "실패 단계와 증적을 확인한 뒤 같은 조건으로 재검증해 주세요.",
+        },
+        "undetermined": {
+            "section": "AI 관측 확인 및 근거 보강 가이드",
+            "problem": "무엇을 확인해야 하나요?",
+            "cause": "왜 판정이 보류됐나요?",
+            "action": "근거 보강 안내",
+            "retest": "재확인 조건",
+            "fallback": "누락된 실행 단계와 증적을 보강한 뒤 다시 확인하세요.",
+        },
+    }.get(diagnosis_outcome, {})
     diagnosis_color = "#198038" if diagnosis_tone == "success" else "#c73e4a" if diagnosis_tone == "failure" else "#b26a00"
     diagnosis_actions = "".join(
         "".join(
@@ -628,7 +663,7 @@ def render_report_html(report: dict[str, Any]) -> str:
             ]
         )
         for item in diagnosis.get("actions", [])
-    ) or "<li><strong>개발·QA 담당</strong><span>실행 단계와 증적을 확인한 뒤 같은 조건으로 재검증해 주세요.</span></li>"
+    ) or f"<li><strong>개발·QA 담당</strong><span>{esc(diagnosis_copy.get('fallback'))}</span></li>"
     diagnosis_evidence = "".join(f"<li>{esc(item)}</li>" for item in diagnosis.get("evidence", [])) or "<li>구조화된 실행 단계와 증적 패키지를 확인해 주세요.</li>"
     mascot_uri = _mascot_data_uri()
     mascot = f"<img class='mascot' src='{mascot_uri}' alt='QA 리포트 도우미 캐릭터'>" if mascot_uri else "<div class='mascot-fallback'>🤖</div>"
@@ -657,7 +692,7 @@ def render_report_html(report: dict[str, Any]) -> str:
 <h3>관통 시나리오</h3><div class='journey'><div class='journey-card'><span>A 화면 · 입력</span><strong>{esc(scenario['sourceRoute'])}</strong><small>사용자 입력과 시작 화면</small></div><div class='journey-arrow'>→</div><div class='journey-card'><span>Backend · 요청</span><strong>{esc(scenario['request']['method'])} {esc(scenario['request']['path'])}</strong><small>화면에서 서버로 전달되는 처리</small></div><div class='journey-arrow'>→</div><div class='journey-card'><span>B 화면 · 결과</span><strong>{esc(scenario['destinationRoute'])}</strong><small>이동·안내·값 변경 관측</small></div></div>
 <h3>단계별 관측 분포</h3><div class='status-bar' aria-label='단계별 관측 분포'><span class='status-ok' style='width:{_percent(status_counts.get('ok', 0), observation_total)}%'></span><span class='status-warning' style='width:{_percent(status_counts.get('warning', 0), observation_total)}%'></span><span class='status-skipped' style='width:{_percent(status_counts.get('skipped', 0), observation_total)}%'></span><span class='status-error' style='width:{_percent(status_counts.get('error', 0), observation_total)}%'></span></div><div class='legend'><span>● 정상 관측 <b>{observation_ok}</b></span><span>● 확인 필요 <b>{observation_attention}</b></span><span>● 전체 <b>{observation_total}</b></span></div>
 <h3>자동 관측 요약</h3><p>{esc(execution['outcomeSummary'])}</p><div class='finding-grid'>{attention_steps}</div>
-<h2>2. AI 관측 진단 및 조치 가이드</h2><section class='diagnosis-card is-{diagnosis_tone}'><header><h3>{esc(diagnosis['headline'])}</h3><span>{esc(diagnosis_label)}</span></header><div class='diagnosis-summary'><div><strong>무슨 문제가 있었나요?</strong><p>{esc(diagnosis['problemSummary'])}</p></div><div><strong>왜 이런 결과가 발생했나요?</strong><p>{esc(diagnosis['causeSummary'])}</p></div></div><h3>관측 근거</h3><ul>{diagnosis_evidence}</ul><h3>조치 제안</h3><ul class='diagnosis-actions'>{diagnosis_actions}</ul><p class='diagnosis-retest'><strong>재검증 조건</strong> · {esc(diagnosis['retestCondition'])}</p></section>
+<h2>2. {esc(diagnosis_copy.get('section'))}</h2><section class='diagnosis-card is-{diagnosis_tone}'><header><h3>{esc(diagnosis['headline'])}</h3><span>{esc(diagnosis_label)}</span></header><div class='diagnosis-summary'><div><strong>{esc(diagnosis_copy.get('problem'))}</strong><p>{esc(diagnosis['problemSummary'])}</p></div><div><strong>{esc(diagnosis_copy.get('cause'))}</strong><p>{esc(diagnosis['causeSummary'])}</p></div></div><h3>관측 근거</h3><ul>{diagnosis_evidence}</ul><h3>{esc(diagnosis_copy.get('action'))}</h3><ul class='diagnosis-actions'>{diagnosis_actions}</ul><p class='diagnosis-retest'><strong>{esc(diagnosis_copy.get('retest'))}</strong> · {esc(diagnosis['retestCondition'])}</p></section>
 <h2>3. 기술 검증</h2><div class='evidence-stats'><div class='stat-card'><span>검증 상태</span><strong>{esc(verification['technicalStatus'])}</strong></div><div class='stat-card'><span>일치</span><strong>{verification['matchedCount']}건</strong></div><div class='stat-card'><span>불일치</span><strong>{verification['mismatchCount']}건</strong></div><div class='stat-card'><span>자료 확인 필요</span><strong>{verification['missingCount']}건</strong></div></div><table><thead><tr><th>검증 항목</th><th>결과</th><th>기대값</th><th>관측값</th></tr></thead><tbody>{assertions}</tbody></table>
 <h3>먼저 확인할 내용</h3><ul>{attention}</ul><div class='missing-grid'>{missing}</div>{missing_more}
 <h2>4. 증적 패키지</h2><div class='evidence-stats'><div class='stat-card'><span>패키지 파일</span><strong>{evidence['artifactCount']}건</strong></div><div class='stat-card'><span>시각 증적</span><strong>{visual_evidence_count}장</strong></div><div class='stat-card'><span>시각 증적 구성</span><strong>대표 {len(package_images)} + 단계 {len(runtime_images)}</strong></div><div class='stat-card'><span>파일 무결성</span><strong>{esc(integrity_label)}</strong></div></div>

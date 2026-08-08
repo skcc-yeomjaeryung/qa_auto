@@ -9,6 +9,7 @@ import { EvidenceGallery } from "./EvidenceGallery";
 import { EvidencePackageViewer } from "./EvidencePackageViewer";
 import { actionToastId, showActionToast } from "../lib/actionToast";
 import { AssistantGuide } from "./AssistantGuide";
+import { getDiagnosisCopy } from "../lib/diagnosisCopy";
 
 type ReportAssertion = {
   assertionId: string;
@@ -200,6 +201,7 @@ export function RunReportDrawer({
   if (!open) return null;
 
   const contextLine = report?.project.name || context?.projectName || context?.groupName;
+  const diagnosisText = getDiagnosisCopy(report?.diagnosis.outcome);
 
   return (
     <div className="run-drawer-layer" data-testid="run-report-drawer-layer">
@@ -275,16 +277,16 @@ export function RunReportDrawer({
                   </span>
                 </div>
                 <div className="report-diagnosis-grid">
-                  <div><strong>무슨 문제가 있었나요?</strong><p>{report.diagnosis.problemSummary}</p></div>
-                  <div><strong>왜 이런 결과가 발생했나요?</strong><p>{report.diagnosis.causeSummary}</p></div>
+                  <div><strong>{diagnosisText.primaryQuestion}</strong><p>{report.diagnosis.problemSummary}</p></div>
+                  <div><strong>{diagnosisText.causeQuestion}</strong><p>{report.diagnosis.causeSummary}</p></div>
                 </div>
                 <div className="report-diagnosis-actions">
-                  <strong>조치 제안</strong>
+                  <strong>{diagnosisText.actionTitle}</strong>
                   {report.diagnosis.actions.length ? report.diagnosis.actions.map((item, index) => (
                     <article key={`${item.owner}-${index}`}><span>{item.owner}</span><p>{item.action}</p><small>{item.reason}</small></article>
-                  )) : <p>실행 단계와 증적을 확인한 뒤 같은 조건으로 재검증해 주세요.</p>}
+                  )) : <p>{diagnosisText.emptyAction}</p>}
                 </div>
-                <p className="report-retest"><strong>재검증 조건</strong>{report.diagnosis.retestCondition}</p>
+                <p className="report-retest"><strong>{diagnosisText.retestLabel}</strong>{report.diagnosis.retestCondition}</p>
               </section>
 
               <section className="report-review-section">
