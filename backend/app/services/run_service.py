@@ -4,6 +4,7 @@ import json
 import logging
 import re
 import threading
+from contextlib import nullcontext
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -25,6 +26,44 @@ logger = logging.getLogger(__name__)
 
 TERMINAL_STATUSES = {"WAITING_FOR_REVIEW", "AUTO_FAILED", "CANCELLED"}
 ACTIVE_STATUSES = {"QUEUED", "PREPARING", "RUNNING"}
+_MUTATION_LOCKS_GUARD = threading.Lock()
+_MUTATION_LOCKS: dict[str, threading.Lock] = {}
+
+
+def _contains_destructive_action(value: Any) -> bool:
+    """Return whether a scenario contains an evidence-backed mutation step."""
+    if isinstance(value, dict):
+        for key, item in value.items():
+            normalized = str(key).lower()
+            if normalized in {"destructive", "isdestructive"} and item is True:
+                return True
+            if normalized in {"risk", "safetyclass"} and str(item).lower() == "destructive":
+                return True
+            if _contains_destructive_action(item):
+                return True
+    elif isinstance(value, list):
+        return any(_contains_destructive_action(item) for item in value)
+    return False
+
+
+def _mutation_lock(resource_key: str) -> threading.Lock:
+    with _MUTATION_LOCKS_GUARD:
+        return _MUTATION_LOCKS.setdefault(resource_key, threading.Lock())
+
+
+def _mutation_execution_context(
+    run: RunSummary, scenario_body: dict[str, Any], allow_destructive: bool
+):
+    """Serialize mutations that share an environment/account; keep reads parallel."""
+    if not allow_destructive or not _contains_destructive_action(scenario_body):
+        return nullcontext()
+    resource_key = ":".join(
+        [
+            str(run.environmentId or run.projectId or "unknown-environment"),
+            str(run.executionAccountId or "environment-default-account"),
+        ]
+    )
+    return _mutation_lock(resource_key)
 
 
 class StaleVersionError(RuntimeError):
@@ -293,45 +332,46 @@ class BrowserRunService:
             },
         }
         try:
-            response = PlatformRunnerAdapter().execute(
-                "wf_browser_execute",
-                {
-                    "projectId": running.projectId,
-                    "runId": run_id,
-                    "scenarioId": running.scenarioId,
-                    "scenario": scenario_body,
-                    "inputs": inputs,
-                    "consent": True,
-                    "baseUrl": base_url,
-                    "headed": headed,
-                    "headers": headers,
-                    "connection": connection or {},
-                    "evidenceDir": str(evidence_dir.resolve()),
-                    "progressPath": str(progress_path.resolve()) if progress_path else None,
-                    "artifactPath": str((evidence_dir / "skill-output.json").resolve()),
-                },
-            )
-
-            result: dict = {}
-            if response.status == "complete" and response.stepResults:
-                output = response.stepResults[0].get("output") or {}
-                if output.get("result"):
-                    result = output["result"]
-                    result["agentTraceId"] = response.plan.planId
-
-            if not result:
-                result = execute_scenario(
-                    scenario=scenario_body,
-                    inputs=inputs,
-                    base_url=base_url,
-                    run_id=run_id,
-                    consent=True,
-                    evidence_dir=evidence_dir,
-                    headers=headers,
-                    headed=headed,
-                    progress_path=progress_path,
-                    connection=connection or {},
+            with _mutation_execution_context(running, scenario_body, allow_destructive):
+                response = PlatformRunnerAdapter().execute(
+                    "wf_browser_execute",
+                    {
+                        "projectId": running.projectId,
+                        "runId": run_id,
+                        "scenarioId": running.scenarioId,
+                        "scenario": scenario_body,
+                        "inputs": inputs,
+                        "consent": True,
+                        "baseUrl": base_url,
+                        "headed": headed,
+                        "headers": headers,
+                        "connection": connection or {},
+                        "evidenceDir": str(evidence_dir.resolve()),
+                        "progressPath": str(progress_path.resolve()) if progress_path else None,
+                        "artifactPath": str((evidence_dir / "skill-output.json").resolve()),
+                    },
                 )
+
+                result: dict = {}
+                if response.status == "complete" and response.stepResults:
+                    output = response.stepResults[0].get("output") or {}
+                    if output.get("result"):
+                        result = output["result"]
+                        result["agentTraceId"] = response.plan.planId
+
+                if not result:
+                    result = execute_scenario(
+                        scenario=scenario_body,
+                        inputs=inputs,
+                        base_url=base_url,
+                        run_id=run_id,
+                        consent=True,
+                        evidence_dir=evidence_dir,
+                        headers=headers,
+                        headed=headed,
+                        progress_path=progress_path,
+                        connection=connection or {},
+                    )
         except Exception as exc:  # noqa: BLE001 — 실행 실패도 관측 재료로 남긴다
             logger.exception("browser run failed run=%s", run_id)
             result = {

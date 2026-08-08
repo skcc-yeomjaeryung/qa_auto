@@ -617,7 +617,6 @@ export function ScenarioSetWorkbench() {
         consent: true,
         environmentId,
         scenarioAccountIds,
-        inputs: { customerId: "CUS-1001" },
       };
       const res = await fetch(`${API}/api/console/bulk-runs`, {
         method: "POST",

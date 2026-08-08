@@ -26,6 +26,7 @@ from app.services.console_models import (
     ScenarioGenerateRequest,
 )
 from app.services.frontend_analysis import FrontendAnalysisService
+from app.services.input_recommend_service import InputRecommendService
 from app.services.pipeline import AnalyzeToScenariosPipeline
 from app.services.repository_models import RepoRole, RepositoryRegister, utc_now
 from app.services.repository_store import InMemoryPlatformStore
@@ -219,6 +220,7 @@ class ConsoleService:
         self.fe = FrontendAnalysisService(store)
         self.be = BackendAnalysisService(store)
         self.pipeline = AnalyzeToScenariosPipeline(store)
+        self.input_recommend = InputRecommendService(store)
         self.runs = BrowserRunService(store)
 
     def connect_pair(self, payload: ConnectPairRequest) -> ConnectResult:
@@ -1014,6 +1016,15 @@ class ConsoleService:
         runs: list[dict] = []
         for scenario_id in payload.scenarioIds:
             try:
+                # A bulk request can contain scenarios with different fields and
+                # boundaries.  When an operator did not provide an explicit shared
+                # override, prepare each scenario's own evidence-based defaults
+                # instead of leaking a sample value from another domain into every
+                # form (for example, customerId into a deposit amount field).
+                if not payload.inputs and not self.store.get_recommendation_by_scenario(
+                    scenario_id
+                ):
+                    self.input_recommend.recommend(scenario_id)
                 summary = self.runs.start_run(
                     scenario_id,
                     RunCreateRequest(
