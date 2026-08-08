@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { matchesQuery } from "./ScreenSearch";
 import { Button } from "./ui";
+import { AssistantGuide } from "./AssistantGuide";
 
 export type ModelCapability =
   | "chat"
@@ -96,6 +97,7 @@ export function ModelSelectionDialog({
           </div>
           <Button variant="secondary" size="sm" onClick={onClose}>닫기</Button>
         </header>
+        <AssistantGuide compact title="역할에 맞는 모델만 골라드려요" message="필수 capability와 Health를 확인해 현재 역할에 사용할 수 있는 모델만 표시합니다." />
         <div className="model-picker-search">
           <span aria-hidden>⌕</span>
           <input

@@ -109,6 +109,7 @@ def test_create_environment_and_health_check() -> None:
             "frontendBaseUrl": CYMBAL_BANK_FRONTEND_URL,
             "healthCheckPath": "/",
             "verifyTls": True,
+            "dataMutationAllowed": True,
         },
     )
     assert create.status_code == 201, create.text
@@ -116,6 +117,7 @@ def test_create_environment_and_health_check() -> None:
     assert env["id"].startswith("ENV-")
     assert env["hostAllowlisted"] is True
     assert env["https"] is True
+    assert env["dataMutationAllowed"] is True
 
     listed = client.get(f"/api/projects/{project_id}/environments")
     assert listed.status_code == 200
@@ -158,6 +160,7 @@ def test_run_resolves_environment_base_url() -> None:
         json={
             "name": "Cymbal",
             "frontendBaseUrl": CYMBAL_BANK_FRONTEND_URL,
+            "dataMutationAllowed": True,
         },
     )
     assert env_res.status_code == 201
@@ -174,7 +177,10 @@ def test_run_resolves_environment_base_url() -> None:
 
     svc = BrowserRunService(store)
 
-    def _fake_execute(*_a, **_k):
+    observed_policy: dict = {}
+
+    def _fake_execute(*args, **_k):
+        observed_policy.update(args[1]["scenario"]["runPolicy"])
         class R:
             status = "complete"
             stepResults = [
@@ -204,6 +210,11 @@ def test_run_resolves_environment_base_url() -> None:
     assert run.baseUrl.rstrip("/") == CYMBAL_BANK_FRONTEND_URL.rstrip("/")
     assert run.environmentId == env["id"]
     assert run.environmentName == "Cymbal"
+    assert observed_policy == {
+        "allowDestructive": True,
+        "source": "environment",
+        "environmentId": env["id"],
+    }
 
 
 def test_resolve_prefers_project_default_environment() -> None:

@@ -362,6 +362,7 @@ class InMemoryPlatformStore:
             browser=payload.browser or BrowserEngine.chrome,
             loginId=(payload.loginId or None),
             loginRole=payload.loginRole,
+            dataMutationAllowed=payload.dataMutationAllowed,
             hasLoginSecret=bool(payload.loginPassword),
             hostAllowlisted=is_host_allowlisted(payload.frontendBaseUrl),
             lastHealthStatus=HealthStatus.unknown,

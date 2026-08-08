@@ -64,6 +64,8 @@ export type RunPreview = {
   inferredFieldCount?: number;
   destructive: boolean;
   destructiveReasons: string[];
+  dataMutationAllowed: boolean;
+  dataMutationPolicySource: "environment" | "one_time_confirmation";
   plannedSteps: RunPreviewStep[];
   recommendationId?: string | null;
   inputProfileId?: string | null;

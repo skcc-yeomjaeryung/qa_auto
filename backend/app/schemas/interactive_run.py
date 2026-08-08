@@ -88,6 +88,10 @@ class RunPreview(BaseModel):
     inferredFieldCount: int = 0
     destructive: bool = False
     destructiveReasons: list[str] = Field(default_factory=list)
+    dataMutationAllowed: bool = False
+    dataMutationPolicySource: Literal["environment", "one_time_confirmation"] = (
+        "one_time_confirmation"
+    )
     plannedSteps: list[RunPreviewStep] = Field(default_factory=list)
     recommendationId: str | None = None
     inputProfileId: str | None = None

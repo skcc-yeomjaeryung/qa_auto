@@ -71,8 +71,10 @@ export function ActionToastHost() {
           data-toast-tone={toast.tone}
           data-testid="action-toast"
         >
-          <span className="action-toast-symbol" aria-hidden>
-            {toast.tone === "progress" ? <i /> : toast.tone === "success" ? "✓" : toast.tone === "error" ? "!" : "i"}
+          <span className="action-toast-character" aria-hidden>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/pets/blue-friend-walk.gif" alt="" />
+            {toast.tone === "progress" ? <i /> : null}
           </span>
           <div>
             <strong>{toast.title}</strong>

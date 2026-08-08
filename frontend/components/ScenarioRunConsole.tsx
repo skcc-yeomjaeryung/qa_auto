@@ -9,6 +9,7 @@ import { apiFetch } from "../lib/apiClient";
 import { lsGet, lsSet } from "../lib/localStore";
 import { formatDateTime } from "../lib/datetime";
 import { ButtonLink } from "./ui/ButtonLink";
+import { AssistantGuide } from "./AssistantGuide";
 import {
   cancelRun,
   fetchRun,
@@ -215,7 +216,7 @@ export function ScenarioRunConsole({
 
   async function launch(destructiveApproved = false) {
     if (!preview) return;
-    if (preview.destructive && !destructiveApproved) {
+    if (preview.destructive && !preview.dataMutationAllowed && !destructiveApproved) {
       setDestructiveConfirmOpen(true);
       return;
     }
@@ -234,7 +235,7 @@ export function ScenarioRunConsole({
         inputs: effectiveInputs,
         overrides,
         reuseFromRunId: reusePrevious ? preview.previousRun?.runId ?? null : null,
-        allowDestructive: preview.destructive && destructiveApproved,
+        allowDestructive: preview.destructive && (preview.dataMutationAllowed || destructiveApproved),
       });
       setRun(started);
     } catch (e) {
@@ -367,6 +368,11 @@ export function ScenarioRunConsole({
               </button>
             </header>
             <div className="destructive-run-body">
+              <AssistantGuide
+                compact
+                title="이번 실행만 데이터 변경을 허용합니다"
+                message="프로젝트 환경에서 미리 허용하지 않아 확인을 요청드렸어요. 변경 전후 결과와 증적은 실행 이력에 남습니다."
+              />
               <div className="connect-banner is-warn">
                 이 시나리오는 등록된 파일럿 환경의 데이터를 변경할 수 있습니다. 승인은 이번 실행에만 적용됩니다.
               </div>
@@ -426,6 +432,14 @@ export function ScenarioRunConsole({
 
       {preview && (
         <>
+          {preview.destructive && preview.dataMutationAllowed && (
+            <AssistantGuide
+              compact
+              title="프로젝트 정책으로 데이터 변경이 허용되어 있어요"
+              message="입금·등록 단계까지 실제로 실행하고 화면, API 응답, 변경 전후 값을 함께 검증합니다."
+              testId="run-mutation-policy-guide"
+            />
+          )}
           <FlowStrip preview={preview} screenOnly={noInputNeeded} />
 
           <div className="run-console-grid">

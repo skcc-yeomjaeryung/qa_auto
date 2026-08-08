@@ -196,6 +196,8 @@ Backend SDD: [`docs/02.아키텍처/05.BackendSDD구조.md`](docs/02.아키텍�
 11. 임의 sleep 금지 — snapshot/selector/network 조건 대기.
 12. DOM 직접 값 주입 금지 — fill/click 등 실제 사용자 이벤트만.
 13. Secret·Token·개인정보는 저장하지 않는다. Pilot/Sandbox만. destructive 기본 차단.
+    단, 테스트 전용·초기화 가능한 실행환경에서 사용자가 `dataMutationAllowed=true`를 명시하면
+    개별·일괄·예약 실행이 환경 정책을 상속하며 정책 출처를 Run에 기록한다.
 ```
 
 제외 범위: [`docs/01.제품과완료기준/04.범위와제외항목.md`](docs/01.제품과완료기준/04.범위와제외항목.md)

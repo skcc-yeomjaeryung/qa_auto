@@ -8,6 +8,7 @@ import { CommonDialogTabs } from "./CommonDialogTabs";
 import { EvidenceGallery } from "./EvidenceGallery";
 import { EvidencePackageViewer } from "./EvidencePackageViewer";
 import { actionToastId, showActionToast } from "../lib/actionToast";
+import { AssistantGuide } from "./AssistantGuide";
 
 type ReportAssertion = {
   assertionId: string;
@@ -221,6 +222,7 @@ export function RunReportDrawer({
         </header>
 
         <div className="run-drawer-body">
+          <AssistantGuide compact title="보고서 전체 흐름부터 증적까지 준비했어요" message="도넛 요약과 실행 결과를 먼저 확인한 뒤, 단계별 증적까지 이어서 검토하고 다운로드할 수 있습니다." />
           {loading && (
             <div className="report-agent-loading" role="status">
               <span className="report-agent-orbit" aria-hidden="true">✦</span>

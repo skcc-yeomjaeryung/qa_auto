@@ -128,6 +128,9 @@ class ExecutionEnvironmentCreate(BaseModel):
     browser: BrowserEngine = BrowserEngine.chrome
     loginId: str | None = Field(default=None, max_length=120)
     loginRole: str = Field(default="관리자", min_length=1, max_length=80)
+    # 관통 테스트 중 대상 시스템의 업무 데이터를 생성·변경하는 동작 허용 여부.
+    # 프로젝트 실행환경 메타데이터로 저장하며 브라우저 실행 정책이 자동 상속한다.
+    dataMutationAllowed: bool = False
     # 로그인 비밀번호는 응답·로그·증적에 실리지 않는다 (write-only)
     loginPassword: str | None = Field(default=None, max_length=200, exclude=True)
     # Never accept raw secrets
@@ -169,6 +172,7 @@ class ExecutionEnvironmentUpdate(BaseModel):
     browser: BrowserEngine | None = None
     loginId: str | None = Field(default=None, max_length=120)
     loginRole: str | None = Field(default=None, min_length=1, max_length=80)
+    dataMutationAllowed: bool | None = None
     loginPassword: str | None = Field(default=None, max_length=200, exclude=True)
     status: EnvironmentStatus | None = None
 
@@ -203,6 +207,7 @@ class ExecutionEnvironment(BaseModel):
     browser: BrowserEngine = BrowserEngine.chrome
     loginId: str | None = None
     loginRole: str = "관리자"
+    dataMutationAllowed: bool = False
     # 비밀번호 값은 저장 모델에 담지 않는다. 등록 여부만 노출한다.
     hasLoginSecret: bool = False
     hostAllowlisted: bool = False

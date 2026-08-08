@@ -243,6 +243,12 @@ class RunPreviewService:
             inferredFieldCount=sum(1 for f in fields if f.confidence == "inferred"),
             destructive=destructive,
             destructiveReasons=reasons,
+            dataMutationAllowed=bool(getattr(env, "dataMutationAllowed", False)),
+            dataMutationPolicySource=(
+                "environment"
+                if bool(getattr(env, "dataMutationAllowed", False))
+                else "one_time_confirmation"
+            ),
             plannedSteps=planned,
             recommendationId=recommendation.recommendationId if recommendation else None,
             inputProfileId=profile.profileId if profile else None,

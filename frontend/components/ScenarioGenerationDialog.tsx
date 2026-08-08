@@ -3,6 +3,7 @@
 import { useRef, useState, type ChangeEvent } from "react";
 import { parseCsv, type CsvRow } from "../lib/csv";
 import { Button } from "./ui/Button";
+import { AssistantGuide } from "./AssistantGuide";
 
 export type ScenarioTemplateRow = {
   scenarioId: string;
@@ -79,6 +80,7 @@ export function ScenarioGenerationDialog({
           </div>
           <button type="button" className="modal-close" disabled={busy} onClick={onClose} aria-label="닫기">×</button>
         </header>
+        <AssistantGuide compact title="코드 근거와 현업 맥락을 함께 볼게요" message="화면 이벤트, Backend API, 보강 자료를 연결하고 인간이 놓치기 쉬운 경계값도 후보로 확장합니다." />
         <div className="generation-options">
           <label className={mode === "ai" ? "is-selected" : ""}>
             <input type="radio" name="generation-mode" checked={mode === "ai"} onChange={() => setMode("ai")} />

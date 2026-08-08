@@ -6,6 +6,7 @@ import { parseCsv } from "../lib/csv";
 import { PILOT_SANDBOX_BASE_URL } from "../lib/pilotTarget";
 import { Button } from "./ui/Button";
 import { InputField } from "./ui/InputField";
+import { AssistantGuide } from "./AssistantGuide";
 
 export type ExecutionEnvironmentChoice = {
   id: string;
@@ -174,6 +175,7 @@ export function ExecutionAccountDialog({
     <div className="modal-backdrop" data-testid="execution-account-dialog">
       <section className="generation-modal account-modal" role="dialog" aria-modal="true" aria-labelledby="account-dialog-title">
         <header><div><p className="panel-kicker">테스트 계정 선택</p><h3 id="account-dialog-title">이 시나리오는 어떤 사용자로 실행할까요?</h3></div><button type="button" className="modal-close" disabled={busy} onClick={onClose} aria-label="닫기">×</button></header>
+        <AssistantGuide compact title="계정은 실행에만 안전하게 사용해요" message="권한별 업무 흐름을 재현하며 비밀번호는 화면·로그·증적에 노출하지 않습니다." />
         <div className="account-modal-body">
           <div className={`connect-banner ${accounts.length ? "is-ok" : "is-warn"}`}>
             {accounts.length

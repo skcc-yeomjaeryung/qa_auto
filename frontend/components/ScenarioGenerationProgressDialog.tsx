@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ProgressBarType1 } from "./ProgressBar";
 import { Button } from "./ui/Button";
+import { AssistantGuide } from "./AssistantGuide";
 
 export type ScenarioGenerationStatus = "idle" | "running" | "complete" | "error";
 
@@ -153,6 +154,11 @@ export function ScenarioGenerationProgressDialog({
         </header>
 
         <div className="generation-progress-body">
+          <AssistantGuide
+            compact
+            title={status === "running" ? "분석은 제가 계속 지켜보고 있어요" : title}
+            message={status === "running" ? phaseLabel(displayProgress) : status === "complete" ? "생성 결과를 목록에서 확인하고 바로 실행할 수 있어요." : "오류 원인을 확인한 뒤 같은 설정으로 다시 시도할 수 있어요."}
+          />
           <div className={`generation-ai-orb is-${status}`} aria-hidden>
             <span>AI</span>
             {status === "running" && <i><b /><b /><b /></i>}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect } from "react";
+import { AssistantGuide } from "./AssistantGuide";
 
 export type LightboxImage = {
   src: string;
@@ -69,6 +70,7 @@ export function ImageLightbox({
             닫기
           </button>
         </div>
+        <AssistantGuide compact title="이 화면이 실행 증적이에요" message="캡처 시점과 단계 설명을 함께 확인해 관측 결과를 검토할 수 있습니다." />
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={current.src} alt={current.caption || "증적 스크린샷"} />
         {total > 1 && (

@@ -239,7 +239,6 @@ class ScheduleService:
                         environmentId=environment.id,
                         mode="interactive",
                         scenarioVersion=str(scenario.version or "1"),
-                        allowDestructive=False,
                     ),
                 )
                 run_ids.append(run.runId)

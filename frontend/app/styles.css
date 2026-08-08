@@ -10175,7 +10175,7 @@ body.is-soft-shell {
 
 .action-toast {
   display: grid;
-  grid-template-columns: 32px minmax(0, 1fr) 24px;
+  grid-template-columns: 38px minmax(0, 1fr) 24px;
   align-items: start;
   gap: 10px;
   padding: 13px 12px;
@@ -10239,4 +10239,76 @@ body.is-soft-shell {
 @media (prefers-reduced-motion: reduce) {
   .action-toast { animation: none; }
   .action-toast-symbol i { animation-duration: 1.8s; }
+}
+
+/* Contextual assistant — project policy, dialogs and long-running notifications. */
+.assistant-guide {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #cdd8ff;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #f6f8ff 0%, #eef5ff 100%);
+  color: var(--text-primary);
+}
+.assistant-guide > img {
+  width: 58px;
+  height: 58px;
+  flex: 0 0 auto;
+  object-fit: contain;
+  image-rendering: auto;
+}
+.assistant-guide > div { min-width: 0; }
+.assistant-guide strong { display: block; margin-bottom: 4px; font-size: 12px; }
+.assistant-guide p { margin: 0; color: var(--text-muted); font-size: 11px; line-height: 1.55; }
+.assistant-guide.is-compact { margin: 12px 18px 0; padding: 9px 12px; }
+.assistant-guide.is-compact > img { width: 38px; height: 38px; }
+.finance-create-aside .assistant-guide {
+  position: sticky;
+  top: 14px;
+  z-index: 1;
+  margin-bottom: 8px;
+}
+
+.mutation-policy-field { grid-column: 1 / -1; }
+.mutation-policy-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 66px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fbfcff;
+  cursor: pointer;
+}
+.mutation-policy-control input { width: 20px; height: 20px; accent-color: var(--primary); }
+.mutation-policy-control > span { display: grid; gap: 4px; }
+.mutation-policy-control b { color: var(--text-primary); font-size: 12px; }
+.mutation-policy-control small { color: var(--text-muted); font-size: 10px; line-height: 1.45; }
+
+.action-toast-character {
+  position: relative;
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 12px;
+  background: #eef3ff;
+}
+.action-toast-character img { width: 34px; height: 34px; object-fit: contain; }
+.action-toast-character i {
+  position: absolute;
+  inset: -2px;
+  border: 2px solid transparent;
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: action-toast-spin 1s linear infinite;
+}
+
+@media (max-width: 720px) {
+  .assistant-guide { align-items: flex-start; }
+  .assistant-guide > img { width: 44px; height: 44px; }
 }

@@ -24,8 +24,10 @@ def test_environment_accounts_keep_role_and_secret_out_of_response() -> None:
             loginId="admin",
             loginPassword="secret-admin",
             loginRole="관리자",
+            dataMutationAllowed=True,
         ),
     )
+    assert environment.dataMutationAllowed is True
     default = store.list_execution_accounts(environment.id)
     assert default[0].role == "관리자"
     assert "secret-admin" not in default[0].model_dump_json()

@@ -136,6 +136,17 @@ class BrowserRunService:
         repo_meta = self._repo_meta(scenario.projectId)
         # 연결 계정·브라우저 — 프로젝트 환경에 등록된 값만 사용한다 (없으면 missing_data)
         connection = self._connection(env, payload.executionAccountId)
+        environment_allows_mutation = bool(
+            getattr(env, "dataMutationAllowed", False)
+        )
+        allow_destructive = bool(payload.allowDestructive) or environment_allows_mutation
+        mutation_policy_source = (
+            "environment"
+            if environment_allows_mutation
+            else "one_time_confirmation"
+            if payload.allowDestructive
+            else "default_block"
+        )
 
         inputs, input_profile_id, input_profile_version = self._resolve_inputs(
             scenario_id, payload
@@ -211,7 +222,8 @@ class BrowserRunService:
                     headers,
                     payload.headed,
                     connection,
-                    payload.allowDestructive,
+                    allow_destructive,
+                    mutation_policy_source,
                 ),
                 name=f"run-{run_id}",
                 daemon=True,
@@ -227,7 +239,8 @@ class BrowserRunService:
             headers,
             payload.headed,
             connection,
-            payload.allowDestructive,
+            allow_destructive,
+            mutation_policy_source,
         )
 
     def _connection(self, env, execution_account_id: str | None = None) -> dict[str, Any]:
@@ -266,13 +279,18 @@ class BrowserRunService:
         headed: bool,
         connection: dict[str, Any] | None = None,
         allow_destructive: bool = False,
+        mutation_policy_source: str = "default_block",
     ) -> RunSummary:
         run_id = running.runId
         evidence_dir = Path(running.evidenceDir or (ARTIFACTS_EVIDENCE / "runs" / run_id))
         progress_path = self._progress_path(running)
         scenario_body = {
             **dict(scenario.result or {}),
-            "runPolicy": {"allowDestructive": bool(allow_destructive)},
+            "runPolicy": {
+                "allowDestructive": bool(allow_destructive),
+                "source": mutation_policy_source,
+                "environmentId": running.environmentId,
+            },
         }
         try:
             response = PlatformRunnerAdapter().execute(

@@ -27,6 +27,7 @@ import {
   type ModelCapability,
   type SelectableModelProfile,
 } from "./ModelSelectionDialog";
+import { AssistantGuide } from "./AssistantGuide";
 
 const API = process.env.NEXT_PUBLIC_CONTROL_PLANE_URL ?? "http://127.0.0.1:8000";
 
@@ -223,6 +224,7 @@ type ProjectEnvironment = {
   browser?: string;
   loginId?: string | null;
   loginRole?: string | null;
+  dataMutationAllowed?: boolean;
   hasLoginSecret?: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -343,6 +345,7 @@ export function ProjectsWorkbench() {
   const [connectLoginId, setConnectLoginId] = useState<string>(CONNECT_DEFAULTS.loginId);
   const [connectPassword, setConnectPassword] = useState<string>(CONNECT_DEFAULTS.loginPassword);
   const [connectLoginRole, setConnectLoginRole] = useState("관리자");
+  const [dataMutationAllowed, setDataMutationAllowed] = useState(false);
   const [envPresets, setEnvPresets] = useState<EnvPreset[]>([]);
   const [healthBusy, setHealthBusy] = useState(false);
   const [syncingSetIds, setSyncingSetIds] = useState<Set<string>>(new Set());
@@ -478,6 +481,7 @@ export function ProjectsWorkbench() {
           setConnectBrowser(environment.browser || CONNECT_DEFAULTS.browser);
           setConnectLoginId(environment.loginId || "");
           setConnectLoginRole(environment.loginRole || "관리자");
+          setDataMutationAllowed(Boolean(environment.dataMutationAllowed));
           // 기존 Secret은 다시 노출하지 않는다. 빈 값이면 PATCH에서 기존 값을 유지한다.
           setConnectPassword("");
           setConfirmSummary((current) => current ? {
@@ -532,6 +536,7 @@ export function ProjectsWorkbench() {
     setModelBindings({});
     setModelPickerRole(null);
     setRepoName("");
+    setDataMutationAllowed(false);
     setSelectedProjectId(null);
     setMessage(null);
     setConfirmSummary(null);
@@ -882,6 +887,7 @@ export function ProjectsWorkbench() {
         loginId: connectLoginId.trim(),
         ...(connectPassword ? { loginPassword: connectPassword } : {}),
         loginRole: connectLoginRole.trim() || "관리자",
+        dataMutationAllowed,
         accessNotes: "Registered from project wizard",
       };
       const createRes = await fetch(environmentUrl, {
@@ -1911,6 +1917,24 @@ export function ProjectsWorkbench() {
                           실행기에만 전달됩니다.
                         </span>
                       </label>
+                      <label className="finance-field mutation-policy-field">
+                        <span className="finance-field-label">테스트 데이터 변경 정책</span>
+                        <span className="mutation-policy-control">
+                          <input
+                            type="checkbox"
+                            checked={dataMutationAllowed}
+                            onChange={(event) => setDataMutationAllowed(event.target.checked)}
+                            data-testid="env-data-mutation-allowed"
+                          />
+                          <span>
+                            <b>데이터 변경 허용</b>
+                            <small>입금·등록·수정처럼 대상 개발환경의 값을 바꾸는 관통 테스트를 실행합니다.</small>
+                          </span>
+                        </span>
+                        <span className="finance-field-hint">
+                          테스트 전용 계정과 초기화 가능한 개발환경에서만 선택하세요. 선택값은 이후 개별·일괄·예약 실행에 자동 적용됩니다.
+                        </span>
+                      </label>
                       <label className="finance-field">
                         <span className="finance-field-label">Backend Base URL (선택)</span>
                         <input
@@ -1932,6 +1956,13 @@ export function ProjectsWorkbench() {
                     </div>
                   </div>
                   <aside className="finance-create-aside">
+                    <AssistantGuide
+                      title={dataMutationAllowed ? "업무 관통 테스트를 실행할게요" : "데이터는 안전하게 보호할게요"}
+                      message={dataMutationAllowed
+                        ? "입금·등록처럼 값이 바뀌는 단계도 실제로 실행하고, 변경 전후 화면·API·결과를 증적으로 남깁니다."
+                        : "현재는 조회 중심으로 실행합니다. 데이터 변경 단계는 실행 전에 한 번 더 확인을 요청합니다."}
+                      testId="environment-mutation-guide"
+                    />
                     <h4>{tipTitle}</h4>
                     {tipBody}
                   </aside>

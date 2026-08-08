@@ -41,8 +41,10 @@ class MemoryScheduleRepository:
 class FakeRuns:
     def __init__(self, store: InMemoryPlatformStore) -> None:
         self.store = store
+        self.payloads = []
 
     def start_run(self, scenario_id, payload):
+        self.payloads.append(payload)
         run = RunSummary(
             runId=f"RUN-{scenario_id}",
             scenarioId=scenario_id,
@@ -98,7 +100,8 @@ def test_natural_language_cron_and_date_window() -> None:
 def test_schedule_crud_scope_execute_and_overlap_guard() -> None:
     store, project_id, scenario_id, environment_id = seeded_store()
     repository = MemoryScheduleRepository()
-    service = ScheduleService(store, repository, FakeRuns(store))  # type: ignore[arg-type]
+    runs = FakeRuns(store)
+    service = ScheduleService(store, repository, runs)  # type: ignore[arg-type]
     schedule = service.create(
         ScheduleCreateRequest(
             scheduleId="SCH-DAILY-0500",
@@ -119,6 +122,8 @@ def test_schedule_crud_scope_execute_and_overlap_guard() -> None:
     assert running.lastExecution is not None
     assert running.lastExecution.totalCount == 1
     assert running.runCount == 1
+    assert runs.payloads[0].environmentId == environment_id
+    assert runs.payloads[0].allowDestructive is False
     completed = service.get(schedule.scheduleId, "TEST")
     assert completed.progressCompleted == 1
     assert completed.lastExecution.status == "COMPLETED"

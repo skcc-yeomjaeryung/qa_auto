@@ -10,6 +10,7 @@ import { CommonDialogTabs } from "./CommonDialogTabs";
 import { ProgressGlyph } from "./ProgressBar";
 import { apiFetch } from "../lib/apiClient";
 import { humanizeMissingEvidence } from "../lib/evidenceLabels";
+import { AssistantGuide } from "./AssistantGuide";
 
 const API = process.env.NEXT_PUBLIC_CONTROL_PLANE_URL ?? "http://127.0.0.1:8000";
 
@@ -190,6 +191,7 @@ export function RunEvidenceDrawer({
         </header>
 
         <div className="run-drawer-body">
+          <AssistantGuide compact title="관측 결과를 단계별로 정리했어요" message="AI 요약, 실제 실행 단계, 화면·DOM·Network 증적을 함께 보고 최종 판단해 주세요." />
           {loading && <div className="empty-state compact">실행 증적을 불러오는 중입니다…</div>}
           {error && <div className="connect-banner is-warn" role="alert">{error}</div>}
           {run && (
